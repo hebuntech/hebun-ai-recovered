@@ -187,7 +187,7 @@ function buildDirectorInsights(
 }
 
 function buildAgentItems(agents: AgentEmployeeRuntimeModel[]): DashboardSectionItem[] {
-  return agents
+  return [...agents]
     .sort((a, b) => {
       const statusWeight = (value: AgentEmployeeRuntimeModel["status"]) =>
         value === "error" ? 4 : value === "running" ? 3 : value === "paused" ? 2 : 1;

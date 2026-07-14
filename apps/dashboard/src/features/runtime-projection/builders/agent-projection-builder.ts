@@ -4,6 +4,8 @@ import { getNodeSnapshot } from "@/features/knowledge-crud/node-adapter";
 import { getSnapshot as getMemorySnapshot } from "@/features/memory-crud/memory-adapter";
 import { getSnapshot as getWorkflowSnapshot } from "@/features/workflow-crud/workflow-adapter";
 import { getAgentExecutionReadiness } from "@/features/execution-readiness";
+import type { GoalRuntimeModel } from "@/features/goal-runtime/types";
+import type { MissionRuntimeModel } from "@/features/mission-runtime/types";
 import type { OrganizationRuntimeSnapshot } from "@/features/organization-runtime/types";
 import { AgentAuthorityService } from "@/features/agent-runtime/agent-authority-service";
 import { AgentCapabilityService } from "@/features/agent-runtime/agent-capability-service";
@@ -131,6 +133,8 @@ function buildStatusSummary(agent: AgentCrudRecord, healthScore: number, readine
 function projectAgent(
   agent: AgentCrudRecord,
   organizationProjection: OrganizationRuntimeSnapshot,
+  goals: readonly GoalRuntimeModel[],
+  missions: readonly MissionRuntimeModel[],
 ): AgentEmployeeRuntimeModel {
   const runtimeAgent = organizationProjection.agents.find(
     (candidate) => candidate.identity.id === agent.id,
@@ -161,6 +165,8 @@ function projectAgent(
     agent,
     relatedWorkflows,
     getNodeSnapshot().filter((node) => node.lifecycleStatus === "active"),
+    goals,
+    missions,
   );
   const capabilities = AgentCapabilityService.buildCapabilityProfile(agent, relatedWorkflows);
   const authority = AgentAuthorityService.buildAuthorityProfile(agent, role);
@@ -224,24 +230,30 @@ function projectAgent(
 
 function buildAgentProjection(
   snapshot: OrganizationRuntimeSnapshot,
+  goals: readonly GoalRuntimeModel[],
+  missions: readonly MissionRuntimeModel[],
 ): AgentEmployeeRuntimeModel[] {
   return getAgentSnapshot()
     .filter((agent) => agent.lifecycleStatus === "active")
-    .map((agent) => projectAgent(agent, snapshot))
+    .map((agent) => projectAgent(agent, snapshot, goals, missions))
     .sort((a, b) => a.identity.name.localeCompare(b.identity.name));
 }
 
 export const AgentProjectionBuilder = createProjectionBuilder({
   collection: "agent-runtime",
   owner: "Agent Runtime",
-  dependencies: ["organization-runtime"],
+  dependencies: ["organization-runtime", "goal-runtime", "mission-runtime"],
   build: (context) => {
     const snapshot =
       context.getSnapshot<OrganizationRuntimeSnapshot>("organization-runtime");
-    if (!snapshot) {
-      throw new Error("Organization projection is required before agent projection.");
+    const goals = context.getSnapshot<GoalRuntimeModel[]>("goal-runtime");
+    const missions = context.getSnapshot<MissionRuntimeModel[]>("mission-runtime");
+    if (!snapshot || !goals || !missions) {
+      throw new Error(
+        "Organization, goal, and mission projections are required before agent projection.",
+      );
     }
-    return buildAgentProjection(snapshot.data);
+    return buildAgentProjection(snapshot.data, goals.data, missions.data);
   },
   count: (snapshot) => snapshot.length,
 });

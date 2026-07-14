@@ -1,5 +1,6 @@
-import { GoalRuntimeService } from "@/features/goal-runtime";
-import { MissionRuntimeService } from "@/features/mission-runtime";
+import { departmentMatchesStrategicLabel } from "@/features/executive-runtime-support/department-matching";
+import type { GoalRuntimeModel } from "@/features/goal-runtime/types";
+import type { MissionRuntimeModel } from "@/features/mission-runtime/types";
 import type {
   AgentProjectionSourceRecord,
   AgentResponsibilityProfile,
@@ -11,6 +12,8 @@ export const AgentResponsibilityService = {
     agent: AgentProjectionSourceRecord,
     workflows: WorkflowProjectionSourceRecord[],
     knowledgeNodes: unknown[],
+    goals: readonly GoalRuntimeModel[],
+    missions: readonly MissionRuntimeModel[],
   ): AgentResponsibilityProfile {
     void knowledgeNodes;
 
@@ -27,7 +30,14 @@ export const AgentResponsibilityService = {
         detail: workflow.trigger,
       }));
 
-    const assignedGoals = GoalRuntimeService.listGoalsForDepartment(agent.department).map((goal) => ({
+    const assignedGoals = goals
+      .filter((goal) =>
+        departmentMatchesStrategicLabel(
+          `${goal.title} ${goal.description}`,
+          agent.department,
+        ),
+      )
+      .map((goal) => ({
         type: "goal" as const,
         id: goal.id,
         label: goal.title,
@@ -35,7 +45,18 @@ export const AgentResponsibilityService = {
         detail: goal.description,
       }));
 
-    const assignedMissions = MissionRuntimeService.listMissionsForDepartment(agent.department)
+    const departmentMissions = missions.filter(
+      (mission) =>
+        mission.focusDepartments.includes(agent.department.toLowerCase()) ||
+        departmentMatchesStrategicLabel(
+          `${mission.title} ${mission.description}`,
+          agent.department,
+        ),
+    );
+    const assignedMissions = (departmentMissions.length > 0
+      ? departmentMissions
+      : missions
+    )
       .slice(0, 3)
       .map((mission) => ({
         type: "mission" as const,

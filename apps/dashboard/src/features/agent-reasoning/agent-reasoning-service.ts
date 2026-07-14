@@ -6,7 +6,7 @@
  * Package + report. No command dispatch, no mutation, no execution.
  */
 
-import { getById, listAll } from "@/features/agent-crud";
+import { getSnapshot as getAgentSnapshot } from "@/features/agent-crud";
 import { buildAgentContext } from "@/features/agent-context";
 import type { AgentContextRequest } from "@/features/agent-context";
 import { reason } from "./reasoning-engine";
@@ -18,7 +18,7 @@ export function getAgentReasoning(
   agentId: string,
   request?: Omit<AgentContextRequest, "agentId">
 ): AgentReasoningResult | null {
-  const agent = getById(agentId);
+  const agent = getAgentSnapshot().find((candidate) => candidate.id === agentId);
   if (!agent) return null;
 
   const contextPackage = buildAgentContext(agent, { agentId, ...request });
@@ -35,7 +35,7 @@ export function getAgentReasoning(
 export function getActiveAgentReasonings(
   request?: Omit<AgentContextRequest, "agentId">
 ): AgentReasoningResult[] {
-  return listAll()
+  return getAgentSnapshot()
     .filter((agent) => agent.lifecycleStatus === "active")
     .slice()
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))

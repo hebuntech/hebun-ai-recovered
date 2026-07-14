@@ -88,8 +88,6 @@ export function mapExecutionPlanToCommands(plan: ExecutionPlan): CommandCandidat
         ownerId: task.ownerId,
         expectedOutput: task.expectedOutput,
       },
-      definition,
     };
   });
 }
-
