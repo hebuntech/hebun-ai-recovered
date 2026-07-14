@@ -1,0 +1,23 @@
+ALTER TABLE "agents" ADD COLUMN "working_memory_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "long_term_memory_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "knowledge_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "reasoning_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "learning_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "provider_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "tool_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "execution_defaults" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "execution_posture" "provider_status";--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "preferred_providers" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "preferred_models" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "allowed_tools" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "required_capabilities" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "supported_strategies" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "memory_namespaces" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "knowledge_domains" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "reasoning_preferences" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "learning_preferences" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "cost_limits" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "performance_targets" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "telemetry_profile" jsonb;--> statement-breakpoint
+ALTER TABLE "agents" ADD COLUMN "agent_profile_version" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
+CREATE INDEX "agents_execution_posture_idx" ON "agents" USING btree ("execution_posture");

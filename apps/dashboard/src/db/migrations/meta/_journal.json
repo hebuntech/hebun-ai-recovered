@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1783791046915,
+      "tag": "20260711173046_foundation_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783791470231,
+      "tag": "20260711173750_actor_reference",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783791879599,
+      "tag": "20260711174439_audit_event_backbone",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783792328826,
+      "tag": "20260711175208_governance_policy_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783792859082,
+      "tag": "20260711180059_identity_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783794887631,
+      "tag": "20260711183447_mission_goal_plan_task_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783795934823,
+      "tag": "20260711185214_workflow_command_execution_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783800449315,
+      "tag": "20260711200729_agent_cognitive_binding",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783800927193,
+      "tag": "20260711201527_working_memory_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783801981876,
+      "tag": "20260711203301_knowledge_reconciliation_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783802441624,
+      "tag": "20260711204041_reasoning_learning_foundation",
+      "breakpoints": true
+    }
+  ]
+}

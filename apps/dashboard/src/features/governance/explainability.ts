@@ -1,0 +1,40 @@
+import type { ExplainabilityRecord } from "@/features/governance/types";
+
+export const explainabilityRecords: ExplainabilityRecord[] = [
+  {
+    id: "exp-1",
+    title: "Enterprise discount recommendation",
+    decision: "Escalate deal for executive approval instead of autonomous send.",
+    confidence: 87,
+    evidence: ["Margin floor breach", "Renewal expansion potential", "Historical win-rate uplift"],
+    reasoningSummary: "The deal exceeds the autonomous discount band and materially changes enterprise pricing precedent.",
+    businessExplanation: "Executive review protects revenue policy while preserving a strategic enterprise opportunity.",
+    executionId: "EX-2051",
+    recommendationId: "r2",
+    owner: "Negotiation Agent",
+  },
+  {
+    id: "exp-2",
+    title: "Candidate screening exception",
+    decision: "Hold candidate auto-reject and request human review.",
+    confidence: 79,
+    evidence: ["Low interview coverage", "Strong domain experience", "Incomplete portfolio metadata"],
+    reasoningSummary: "The model had enough uncertainty that the fairness threshold required human escalation.",
+    businessExplanation: "A manual review reduces the risk of losing a potentially strong niche candidate.",
+    executionId: "EX-2048",
+    recommendationId: "r4",
+    owner: "Candidate Screening Agent",
+  },
+  {
+    id: "exp-3",
+    title: "Vendor subprocessor risk alert",
+    decision: "Escalate vendor onboarding and block activation.",
+    confidence: 93,
+    evidence: ["Missing DPA", "Unapproved subprocessor", "Policy mismatch with vendor intake"],
+    reasoningSummary: "Three policy checks failed, including one hard block on approved subprocessors.",
+    businessExplanation: "Blocking activation prevents compliance exposure and audit findings later.",
+    executionId: "EX-2046",
+    recommendationId: "r1",
+    owner: "Compliance Agent",
+  },
+];

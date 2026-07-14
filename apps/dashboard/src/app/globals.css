@@ -1,0 +1,266 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/*
+ * Tailwind theme = alias layer over Hebun design tokens (src/styles/tokens.css).
+ * Utilities resolve to CSS variables — theming stays token-driven.
+ * Rule: no raw hex/px/ms in components. Ever.
+ */
+@theme inline {
+  --font-sans: var(--font-jakarta, ui-sans-serif), system-ui, sans-serif;
+
+  /* Surfaces */
+  --color-background: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-sunken: var(--color-surface-sunken);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  /* Text */
+  --color-fg: var(--color-text-primary);
+  --color-fg-secondary: var(--color-text-secondary);
+  --color-fg-muted: var(--color-text-muted);
+  --color-fg-inverse: var(--color-text-inverse);
+
+  /* Brand */
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-press: var(--color-primary-press);
+  --color-primary-subtle: var(--color-primary-subtle);
+  --color-primary-ring: var(--color-primary-ring);
+  --color-accent: var(--color-accent);
+  --color-highlight: var(--color-highlight);
+  --color-on-primary: var(--color-on-primary);
+
+  /* Semantic */
+  --color-success: var(--color-success);
+  --color-success-subtle: var(--color-success-subtle);
+  --color-warning: var(--color-warning);
+  --color-warning-subtle: var(--color-warning-subtle);
+  --color-error: var(--color-error);
+  --color-error-subtle: var(--color-error-subtle);
+  --color-info: var(--color-info);
+  --color-info-subtle: var(--color-info-subtle);
+
+  /* Radius */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  /* Elevation */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-glow: var(--shadow-glow);
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+    scroll-behavior: smooth;
+  }
+
+  * {
+    border-color: var(--color-border);
+    min-width: 0;
+  }
+
+  *::selection {
+    background: var(--color-primary-subtle);
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-feature-settings: "ss01" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  /* Table cells never break words character-by-character. When a table is
+   * too wide, it scrolls (see .ui-table-wrap) instead of shattering text. */
+  th,
+  td {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  details > summary {
+    list-style: none;
+  }
+
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  th {
+    vertical-align: top;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  td {
+    vertical-align: top;
+  }
+
+  button,
+  [role="button"],
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .ui-section-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .ui-metric-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  }
+
+  .ui-metric-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-sunken);
+    padding: 1rem;
+  }
+
+  /*
+   * Canonical table container. Every <table> in the platform is wrapped in
+   * this. It gives the table its own horizontal scroll area and forces cells
+   * to stay on one line — so a table that is wider than its column scrolls
+   * instead of collapsing or wrapping text vertically.
+   */
+  .ui-table-wrap {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    /* Cells inherit nowrap → a table wider than its column scrolls instead of
+     * wrapping text vertically. Opt a cell back in with the whitespace-normal
+     * utility (+ a min-width) for long free-text columns. */
+    white-space: nowrap;
+  }
+
+  .ui-skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-surface-raised) 85%, transparent);
+  }
+
+  .ui-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, white 10%, transparent),
+      transparent
+    );
+    animation: ui-shimmer 1.5s infinite;
+  }
+}
+
+/* Glass — floating chrome only (top bar, palette). Never on dense data. */
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: var(--hairline-top);
+}
+
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Metric-tile value alignment — platform-wide.
+ *
+ * The metric-tile pattern (a sunken card holding an uppercase label followed by
+ * a single numeric value) is inlined across ~100 widgets. When labels wrap to
+ * different line counts within one row, the values drift to different heights.
+ * Rather than patch every widget, anchor the value to the bottom of its tile.
+ * Grid rows stretch tiles to equal height, so bottom-anchored values line up no
+ * matter how many lines each label takes. Scoped to label+value tiles only
+ * (value is the last child) so multi-part tiles are untouched.
+ */
+[class~="bg-surface-sunken"]:has(> p:first-child + p:last-child[class~="tabular-nums"]) {
+  display: flex;
+  flex-direction: column;
+}
+
+[class~="bg-surface-sunken"] > p:last-child[class~="tabular-nums"] {
+  margin-top: auto;
+}
+
+@keyframes ui-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
