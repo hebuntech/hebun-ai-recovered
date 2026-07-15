@@ -20,4 +20,19 @@ export const MemoryRuntimeService = {
       .ensure<MemoryRuntimeProjection>("memory-runtime")
       .data.timeline.slice(0, limit);
   },
+
+  getReport(): MemoryRuntimeProjection["report"] {
+    ensureRuntimeProjectionRegistry();
+    return runtimeProjectionRegistry.ensure<MemoryRuntimeProjection>("memory-runtime").data.report;
+  },
+
+  getActiveCount(): number {
+    ensureRuntimeProjectionRegistry();
+    return runtimeProjectionRegistry.ensure<MemoryRuntimeProjection>("memory-runtime").data.statistics.active;
+  },
+
+  getTypeCount(type: string): number {
+    ensureRuntimeProjectionRegistry();
+    return runtimeProjectionRegistry.ensure<MemoryRuntimeProjection>("memory-runtime").data.statistics.typeCounts[type] ?? 0;
+  },
 };

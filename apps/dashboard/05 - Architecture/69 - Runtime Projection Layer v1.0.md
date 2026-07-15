@@ -273,3 +273,21 @@ Blocked:
 - runtime parity and the complete regression suite cannot be proven while authoritative Memory input is unreadable
 
 Memory remains authoritative. PostgreSQL remains passive. Persistence Contract Modernization must not restart until the Memory source files are readable and the entire validation gate passes.
+
+### Closure Re-Validation — 2026-07-15
+
+Recovery restored the authoritative Memory source modules and bootstrap dependency wiring. The closure implementation then:
+
+- removed observational `generatedAt` and `retrievalTimeMs` values from Agent semantic projection state while retaining Memory Engine telemetry
+- routed Organizational Intelligence memory evidence through Memory Runtime
+- routed executive Dashboard summaries through runtime services and provider status through a diagnostics read boundary
+- expanded boundary validation and added table-driven validation for all nine projection builders
+
+Validation result:
+
+- 9/9 builders bootstrap healthy and available
+- 9/9 builders pass strict deterministic rebuild, deep immutability, and failed-rebuild preservation
+- runtime, Director AI, Organizational Intelligence, and Director Dashboard semantic parity pass
+- TypeScript, ESLint with zero errors, 36/36 regression tests, production build, and `git diff --check` pass
+
+Phase 3C.0A final status: **COMPLETE WITH MINOR DEBT**. The remaining minor debt is the explicit file-level allowlist for mutation and live operational telemetry workspaces, which require a refresh model that this architecture explicitly does not introduce. Memory remains authoritative. PostgreSQL remains passive.

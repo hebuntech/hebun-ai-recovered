@@ -208,6 +208,7 @@ function projectAgent(
     statusSummary: buildStatusSummary(agent, health.score, readiness),
     runtime: agent.runtime,
     provider: agent.provider,
+    costToday: agent.costToday,
     organization: runtimeAgent.organization,
     company: {
       kind: company.identity.kind,

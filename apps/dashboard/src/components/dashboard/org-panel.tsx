@@ -1,11 +1,17 @@
 import { Bot } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { listAll, toDepartmentSummaries } from "@/features/agent-crud";
+import { AgentRegistry } from "@/features/agent-runtime";
 
 export function OrgPanel() {
-  const agents = listAll().filter((agent) => agent.lifecycleStatus !== "deleted");
-  const departments = toDepartmentSummaries(agents);
+  const agents = AgentRegistry.listAgents();
+  const departments = [...new Set(agents.map((agent) => agent.department?.label ?? "Organization"))]
+    .sort((a, b) => a.localeCompare(b))
+    .map((name) => ({
+      id: `dept-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      name,
+      agents: agents.filter((agent) => (agent.department?.label ?? "Organization") === name),
+    }));
 
   return (
     <Card>
@@ -25,15 +31,14 @@ export function OrgPanel() {
               </span>
             </div>
             <ul className="flex flex-col gap-2">
-              {dept.agents.map((name) => {
-                const agent = agents.find((a) => a.name === name);
+              {dept.agents.map((agent) => {
                 return (
-                  <li key={name} className="flex items-center justify-between gap-2">
+                  <li key={agent.identity.id} className="flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-2 text-sm text-fg-secondary">
                       <Bot className="size-3.5 shrink-0 text-fg-muted" />
-                      <span className="truncate">{name}</span>
+                      <span className="truncate">{agent.identity.name}</span>
                     </span>
-                    {agent && <StatusBadge status={agent.status} className="shrink-0" />}
+                    <StatusBadge status={agent.status} className="shrink-0" />
                   </li>
                 );
               })}

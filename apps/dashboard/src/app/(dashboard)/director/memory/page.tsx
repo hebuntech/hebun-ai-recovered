@@ -2,17 +2,17 @@ import { MemoryRegistryWorkspace } from "@/components/memory/memory-registry-wor
 import { MemoryEnginePanel } from "@/components/memory-engine/memory-engine-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { buildReport } from "@/features/memory-crud";
+import { MemoryRuntimeService } from "@/features/memory-runtime";
 
 export default function MemoryPage() {
-  const report = buildReport();
+  const active = MemoryRuntimeService.getActiveCount();
 
   return (
     <>
       <PageHeader
         title="Memory Registry"
         context="First-class memory definitions managed through the Command Bus and the in-memory persistence adapter."
-        action={<Badge variant="success">{report.active} active</Badge>}
+        action={<Badge variant="success">{active} active</Badge>}
       />
       <div className="mb-6">
         <MemoryEnginePanel />

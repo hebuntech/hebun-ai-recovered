@@ -1,17 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/layout/page-header";
 import { AgentRegistryWorkspace } from "@/components/agents/agent-registry-workspace";
-import { buildReport } from "@/features/agent-crud";
+import { AgentRegistry } from "@/features/agent-runtime";
 
 export default function AgentRegistryPage() {
-  const report = buildReport();
+  const active = AgentRegistry.listAgents().length;
 
   return (
     <>
       <PageHeader
         title="Agent Registry"
         context="First-class agent definitions managed through the Command Bus and the in-memory persistence adapter."
-        action={<Badge variant="success">{report.active} active</Badge>}
+        action={<Badge variant="success">{active} active</Badge>}
       />
       <AgentRegistryWorkspace showCards={false} />
     </>

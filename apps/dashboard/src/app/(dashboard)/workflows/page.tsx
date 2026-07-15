@@ -1,10 +1,10 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { CommandAction } from "@/components/command/command-action";
 import { WorkflowRegistryWorkspace } from "@/components/workflows/workflow-registry-workspace";
-import { listAll } from "@/features/workflow-crud";
+import { WorkflowRegistry } from "@/features/workflow-runtime";
 
 export default function WorkflowsPage() {
-  const workflows = listAll();
+  const workflows = WorkflowRegistry.listWorkflows();
 
   return (
     <>

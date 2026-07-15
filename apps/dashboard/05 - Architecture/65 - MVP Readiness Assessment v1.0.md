@@ -295,3 +295,7 @@ This is the architectural mechanism that allows synchronous runtime integrity to
 ## Phase 3C.0A Gate
 
 Current result remains **NO-GO**. Projection immutability and runtime import boundaries pass focused tests, but the authoritative Memory seed cannot currently be read completely, so dashboard and Director AI parity cannot be certified. First-company readiness and persistence modernization remain blocked.
+
+### Phase 3C.0A Re-Validation — 2026-07-15
+
+The Runtime Projection gate is now **COMPLETE WITH MINOR DEBT**. Authoritative Memory sources are readable; bootstrap, strict determinism, boundary validation, semantic parity, typecheck, lint, 36 regression tests, and production build pass. This closes the projection prerequisite only and does not change the broader first-company readiness assessment above.

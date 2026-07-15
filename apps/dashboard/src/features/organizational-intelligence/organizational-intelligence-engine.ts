@@ -3,7 +3,7 @@ import { governanceApprovals } from "@/features/governance/approvals";
 import { governanceMetrics } from "@/features/governance/metrics";
 import { governancePolicies } from "@/features/governance/policies";
 import { governanceRisks } from "@/features/governance/risk";
-import { retrieveReport } from "@/features/memory-engine";
+import { MemoryRuntimeService } from "@/features/memory-runtime";
 import {
   DepartmentRuntimeService,
   HumanRuntimeService,
@@ -25,7 +25,7 @@ function buildObservations(): RuntimeObservationModel {
   const humans = HumanRuntimeService.listHumans();
   const agents = AgentRegistry.listAgents();
   const workflows = WorkflowRegistry.listWorkflows();
-  const memoryReport = retrieveReport({ limit: 24 });
+  const memoryReport = MemoryRuntimeService.getReport();
 
   const verifiedKnowledge = agents.reduce((sum, agent) => sum + agent.knowledgeProfile.verifiedNodes, 0);
   const knowledgeReferences = workflows.reduce((sum, workflow) => sum + workflow.knowledgeReferences.length, 0);

@@ -5,7 +5,7 @@ import type {
   DepartmentRuntimeModel,
   HumanRuntimeModel,
 } from "@/features/organization-runtime";
-import type { MemoryEngineReport } from "@/features/memory-engine";
+import type { MemoryRuntimeReport } from "@/features/memory-runtime";
 import type { WorkflowRuntimeModel } from "@/features/workflow-runtime";
 
 export type IntelligenceSeverity = "critical" | "high" | "medium" | "low";
@@ -67,7 +67,7 @@ export interface RuntimeObservationModel {
     lowCoverageWorkflows: number;
   };
   memory: {
-    report: MemoryEngineReport;
+    report: MemoryRuntimeReport;
     totalReferences: number;
     lowCoverageWorkflows: number;
   };

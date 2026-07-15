@@ -1,4 +1,5 @@
 import type { AgentContextPackage, AgentContextReport } from "@/features/agent-context";
+import type { AgentStatus } from "@/types";
 import type { ExecutionReadinessResult, ExecutionReadinessStatus } from "@/features/execution-readiness";
 import type {
   RuntimeHealth,
@@ -19,9 +20,19 @@ export interface AgentCapabilityProfile {
   summary: string;
 }
 
+export type AgentSemanticContextReport = Omit<AgentContextReport, "retrievalTimeMs">;
+
+export type AgentSemanticContextPackage = Omit<AgentContextPackage, "context" | "report"> & {
+  context: Omit<AgentContextPackage["context"], "summary" | "statistics"> & {
+    summary: Omit<AgentContextPackage["context"]["summary"], "generatedAt">;
+    statistics: Omit<AgentContextPackage["context"]["statistics"], "retrievalTimeMs">;
+  };
+  report: AgentSemanticContextReport;
+};
+
 export interface AgentContextSummary {
-  package: AgentContextPackage | null;
-  report: AgentContextReport | null;
+  package: AgentSemanticContextPackage | null;
+  report: AgentSemanticContextReport | null;
   topMemoryTitle?: string;
   summary: string;
 }
@@ -101,7 +112,7 @@ export interface AgentProjectionSourceRecord {
   department: string;
   category: string;
   owner: string;
-  status: string;
+  status: AgentStatus;
   version: string;
   capabilities: string[];
   provider: string;
@@ -164,10 +175,11 @@ export interface AgentEmployeeRuntimeModel {
   riskLevel: AgentRiskLevel;
   executionReadiness: AgentExecutionReadinessProfile;
   workload: AgentWorkloadProfile;
-  status: string;
+  status: AgentStatus;
   statusSummary: AgentStatusSummary;
   runtime: string;
   provider: string;
+  costToday: number;
   organization: RuntimeRef;
   company: RuntimeRef;
   relationships: {

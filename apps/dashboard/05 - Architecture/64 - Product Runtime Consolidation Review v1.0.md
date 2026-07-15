@@ -674,3 +674,7 @@ Projection now becomes the required intermediary boundary between persistence-fa
 ## Phase 3C.0A Closure Status
 
 Projection boundaries and immutable snapshot semantics are hardened, but formal closure remains **NO-GO**. Two authoritative Memory seed modules do not complete filesystem reads in the current workspace, preventing full bootstrap, parity, typecheck, lint, build, and regression proof. This does not change the earlier consolidation history or provider authority.
+
+### Phase 3C.0A Re-Validation — 2026-07-15
+
+The recovery blockers are resolved. All nine projections now bootstrap, rebuild deterministically, preserve immutable snapshots on failure, and pass runtime, Director AI, Organizational Intelligence, and Director Dashboard semantic parity checks. Executive Dashboard read summaries use runtime services; provider status uses a diagnostics read boundary; Organizational Intelligence consumes Memory Runtime. Final status: **COMPLETE WITH MINOR DEBT**. Explicitly allowlisted mutation and live operational telemetry workspaces remain outside the executive read-model boundary.

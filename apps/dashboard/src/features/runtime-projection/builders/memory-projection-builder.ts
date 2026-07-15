@@ -1,4 +1,5 @@
 import { getSnapshot as getMemorySnapshot } from "@/features/memory-crud/memory-adapter";
+import { retrieveReport } from "@/features/memory-engine";
 import { createProjectionBuilder } from "../projection-builder";
 import type { MemoryRuntimeProjection } from "@/features/memory-runtime/types";
 
@@ -20,6 +21,8 @@ function buildMemoryProjection(): MemoryRuntimeProjection {
   const byType = groupCount(activeMemories, (memory) => memory.memoryType);
   const criticalCount = activeMemories.filter((memory) => memory.importance === "critical").length;
   const reviewCount = activeMemories.filter((memory) => memory.status === "review").length;
+  const { retrievalTimeMs, ...report } = retrieveReport({ limit: 24 });
+  void retrievalTimeMs;
 
   return {
     overview: {
@@ -57,6 +60,11 @@ function buildMemoryProjection(): MemoryRuntimeProjection {
         when: memory.updatedAt,
         kind: "Memory",
       })),
+    report,
+    statistics: {
+      active: activeMemories.length,
+      typeCounts: Object.fromEntries(byType),
+    },
   };
 }
 
@@ -65,5 +73,5 @@ export const MemoryProjectionBuilder = createProjectionBuilder({
   owner: "Memory Runtime",
   dependencies: [],
   build: () => buildMemoryProjection(),
-  count: (snapshot) => snapshot.overview.items.length + snapshot.timeline.length,
+  count: (snapshot) => snapshot.statistics.active,
 });

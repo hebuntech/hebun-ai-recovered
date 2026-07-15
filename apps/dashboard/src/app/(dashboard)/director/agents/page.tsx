@@ -3,10 +3,10 @@ import { AgentContextOverview } from "@/components/agent-context/agent-context-o
 import { ExecutiveReasoningOverview } from "@/components/agent-reasoning/executive-reasoning-overview";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { listAll } from "@/features/agent-crud";
+import { AgentRegistry } from "@/features/agent-runtime";
 
 export default function DirectorAgentsPage() {
-  const active = listAll().filter((agent) => agent.lifecycleStatus === "active").length;
+  const active = AgentRegistry.listAgents().length;
 
   return (
     <>

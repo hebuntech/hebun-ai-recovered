@@ -154,3 +154,10 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - **TD-PROJ-001 — Authoritative Memory source readability:** `memory/conversation.ts` and `memory/episodic.ts` block filesystem reads and projection bootstrap. Severity: blocking.
 - **TD-PROJ-002 — Full projection parity proof:** blocked by TD-PROJ-001; no normalization or seed omission is permitted.
 - **TD-PROJ-003 — Async migration residue:** the earlier persistence contract modernization remains incomplete and must not resume until projection validation closes.
+
+### Phase 3C.0A Debt Re-Validation — 2026-07-15
+
+- **TD-PROJ-001 — RESOLVED:** both authoritative Memory source modules complete normal reads and projection bootstrap passes.
+- **TD-PROJ-002 — RESOLVED:** 9/9 builders pass strict deterministic rebuild and semantic parity validation.
+- **TD-PROJ-003 — UNBLOCKED, NOT IMPLEMENTED:** projection validation is closed; persistence modernization remains a separate future workstream.
+- **TD-PROJ-004 — MINOR:** mutation and live operational telemetry workspaces use a narrow file-level boundary allowlist until a later supported refresh model exists.

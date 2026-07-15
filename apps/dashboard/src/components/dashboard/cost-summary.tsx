@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { listAll } from "@/features/agent-crud";
+import { AgentRegistry } from "@/features/agent-runtime";
 
 export function CostSummary() {
-  const agents = listAll().filter((agent) => agent.lifecycleStatus !== "deleted");
+  const agents = AgentRegistry.listAgents();
   const total = agents.reduce((sum, agent) => sum + agent.costToday, 0);
   const max = Math.max(1, ...agents.map((agent) => agent.costToday));
   const top = [...agents].sort((a, b) => b.costToday - a.costToday).slice(0, 5);
@@ -20,9 +20,9 @@ export function CostSummary() {
         </div>
         <ul className="flex flex-col gap-3">
           {top.map((agent) => (
-            <li key={agent.id} className="flex flex-col gap-1">
+            <li key={agent.identity.id} className="flex flex-col gap-1">
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-fg-secondary">{agent.name}</span>
+                <span className="text-fg-secondary">{agent.identity.name}</span>
                 <span className="font-medium tabular-nums text-fg">
                   ${agent.costToday.toFixed(2)}
                 </span>

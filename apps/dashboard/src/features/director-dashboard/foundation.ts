@@ -13,8 +13,10 @@ import { KnowledgeRuntimeService } from "@/features/knowledge-runtime";
 import { MemoryRuntimeService } from "@/features/memory-runtime";
 import { MissionRuntimeService } from "@/features/mission-runtime";
 import { OrganizationalIntelligenceEngine } from "@/features/organizational-intelligence";
-import { listRegisteredPersistenceProviders } from "@/features/persistence/provider-registry";
-import type { PersistenceProviderDescriptor } from "@/features/persistence/types";
+import {
+  ProviderDiagnosticsReadService,
+  type PersistenceProviderDescriptor,
+} from "@/features/platform-diagnostics/provider-read-service";
 import { WorkflowRegistry, type WorkflowRuntimeModel } from "@/features/workflow-runtime";
 
 export interface DashboardMetric {
@@ -257,7 +259,7 @@ function buildExecutiveTimeline(): DashboardTimelineItem[] {
 }
 
 export async function getDirectorDashboardSnapshot(): Promise<DirectorDashboardSnapshot> {
-  const [providers] = await Promise.all([listRegisteredPersistenceProviders()]);
+  const [providers] = await Promise.all([ProviderDiagnosticsReadService.listProviders()]);
   const intelligence = OrganizationalIntelligenceEngine.getSnapshot();
   const transformation = EnterpriseTransformationEngine.buildSnapshot(intelligence.observations);
   const directorAI = DirectorAIRuntime.getRuntimeSurface({

@@ -5,10 +5,10 @@ import { AgentContextPanel } from "@/components/agent-context/agent-context-pane
 import { AgentReasoningPanel } from "@/components/agent-reasoning/agent-reasoning-panel";
 import { TaskPlanningPanel } from "@/components/task-planning/task-planning-panel";
 import { ExecutionQueuePanel } from "@/components/execution-queue/execution-queue-panel";
-import { listAll } from "@/features/agent-crud";
+import { AgentRegistry } from "@/features/agent-runtime";
 
 export default function AgentsPage() {
-  const agents = listAll();
+  const agents = AgentRegistry.listAgents();
 
   return (
     <>

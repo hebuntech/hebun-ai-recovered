@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSnapshot, toWidgetMetrics } from "@/features/memory-crud";
+import { MemoryRuntimeService } from "@/features/memory-runtime";
 
 export function MemoryWidget() {
-  const metrics = toWidgetMetrics(getSnapshot());
+  const metrics = {
+    total: MemoryRuntimeService.getActiveCount(),
+    decisions: MemoryRuntimeService.getTypeCount("Decision"),
+    facts: MemoryRuntimeService.getTypeCount("Fact"),
+    procedures: MemoryRuntimeService.getTypeCount("Procedure"),
+    organizations: MemoryRuntimeService.getTypeCount("Organization"),
+  };
   const tiles = [
     { label: "Total Memories", value: `${metrics.total}` },
     { label: "Decisions", value: `${metrics.decisions}` },

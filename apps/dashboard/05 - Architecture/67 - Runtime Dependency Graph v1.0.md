@@ -334,3 +334,7 @@ This makes Projection the single runtime-facing state boundary and removes direc
 ## Phase 3C.0A Verified Boundary
 
 The migrated runtime directories no longer import CRUD, repositories, persistence adapters, or PostgreSQL directly. The missed Workflow Runtime import of `planning-queries` was moved to its projection builder. Projection builders remain the low-level read boundary; Dashboard and Director AI do not import builders. Full graph execution remains blocked by unreadable authoritative Memory seed files.
+
+### Phase 3C.0A Boundary Re-Validation — 2026-07-15
+
+Full graph execution now passes. Executive Dashboard reads follow Dashboard -> Runtime -> Projection -> authoritative Memory source. Provider status is isolated behind a platform diagnostics read service, and Organizational Intelligence reads memory evidence through Memory Runtime. Runtime services have no UI, CRUD, repository, persistence adapter, or PostgreSQL imports. Mutation and live operational telemetry workspaces are explicitly allowlisted and do not define executive runtime truth.
