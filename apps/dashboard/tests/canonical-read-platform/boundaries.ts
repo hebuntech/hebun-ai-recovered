@@ -28,6 +28,7 @@ async function main() {
     "src/features/canonical-read-platform/errors.ts",
     "src/features/canonical-read-platform/index.ts",
     "src/features/canonical-read-platform/metrics.ts",
+    "src/features/canonical-read-platform/read-router.ts",
     "src/features/canonical-read-platform/results.ts",
     "src/features/canonical-read-platform/rollout.ts",
     "src/features/canonical-read-platform/types.ts",
