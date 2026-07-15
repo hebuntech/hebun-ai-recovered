@@ -291,3 +291,16 @@ Validation result:
 - TypeScript, ESLint with zero errors, 36/36 regression tests, production build, and `git diff --check` pass
 
 Phase 3C.0A final status: **COMPLETE WITH MINOR DEBT**. The remaining minor debt is the explicit file-level allowlist for mutation and live operational telemetry workspaces, which require a refresh model that this architecture explicitly does not introduce. Memory remains authoritative. PostgreSQL remains passive.
+
+### Persistence Contract Modernization Closure — 2026-07-15
+
+The post-projection persistence contract now preserves the intended split:
+
+- persistence adapter, repository, domain query, validator, and mutation data operations are asynchronous
+- `getSnapshot()` and `subscribe()` remain synchronous bridges for in-process Memory state
+- projection builders and runtime read services remain synchronous and deterministic
+- Dashboard and Director AI executive reads continue through Runtime-owned snapshots
+- successful Memory transactions publish one committed notification; failed transactions restore the prior snapshot without exposing intermediate state to subscribers
+- PostgreSQL advertises no read, write, transaction, tenant-isolation, soft-delete, or optimistic-versioning capability and rejects every data operation in passive mode
+
+Focused persistence, Actor Shadow, and Runtime Projection verification passes alongside 36/36 regression tests, 9/9 deterministic projection builders, semantic parity, TypeScript, ESLint with zero errors, and the 192-page production build. Persistence Contract Modernization is **COMPLETE**. Memory remains authoritative and PostgreSQL remains passive. Activation, tenant isolation, real PostgreSQL transactions, hydration/refresh orchestration, and cutover are not part of this closure.

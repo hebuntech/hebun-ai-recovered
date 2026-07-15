@@ -161,3 +161,10 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - **TD-PROJ-002 — RESOLVED:** 9/9 builders pass strict deterministic rebuild and semantic parity validation.
 - **TD-PROJ-003 — UNBLOCKED, NOT IMPLEMENTED:** projection validation is closed; persistence modernization remains a separate future workstream.
 - **TD-PROJ-004 — MINOR:** mutation and live operational telemetry workspaces use a narrow file-level boundary allowlist until a later supported refresh model exists.
+
+### Persistence Contract Modernization Closure — 2026-07-15
+
+- **TD-PROJ-003 — RESOLVED:** persistence adapters, repositories, domain CRUD services, validators, and mutation consumers use truthful asynchronous data-operation contracts while Runtime, Projection, Dashboard, and Director AI retain synchronous snapshot semantics.
+- Memory remains the active authoritative provider. PostgreSQL remains available, passive, and fail-closed for every unsupported data operation.
+- The synchronous `getSnapshot()` and `subscribe()` bridge, transaction commit notification, failed-transaction rollback isolation, actor-shadow async query consumption, and all five domain CRUD consumer boundaries are verified.
+- PostgreSQL activation, tenant isolation, real PostgreSQL transactions, projection hydration/refresh orchestration, and provider cutover remain separate workstreams.

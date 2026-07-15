@@ -62,6 +62,8 @@ export function createMemoryAdapter<T extends PersistedEntity>(
   const collection = config.collection;
   const emitter = createEmitter();
   let records: T[] = config.seed();
+  let transactionDepth = 0;
+  let pendingNotification = false;
   const manifest = buildMemoryManifest(collection);
 
   function audit(operation: PersistenceOperation): number {
@@ -80,10 +82,18 @@ export function createMemoryAdapter<T extends PersistedEntity>(
     return durationMs;
   }
 
+  function notify(): void {
+    if (transactionDepth > 0) {
+      pendingNotification = true;
+      return;
+    }
+    emitter.emit();
+  }
+
   function commit(next: T[], operation: PersistenceOperation): void {
     records = next;
     audit(operation);
-    emitter.emit();
+    notify();
   }
 
   function get(id: string): T | undefined {
@@ -166,11 +176,21 @@ export function createMemoryAdapter<T extends PersistedEntity>(
     async transaction(work) {
       audit("transaction");
       const snapshot = records.slice();
+      const pendingBefore = pendingNotification;
+      transactionDepth += 1;
       try {
-        return await work(adapter);
+        const result = await work(adapter);
+        transactionDepth -= 1;
+        if (transactionDepth === 0 && pendingNotification) {
+          pendingNotification = false;
+          emitter.emit();
+        }
+        return result;
       } catch (error) {
         records = snapshot;
-        emitter.emit();
+        transactionDepth -= 1;
+        pendingNotification = pendingBefore;
+        if (transactionDepth === 0) pendingNotification = false;
         throw error;
       }
     },

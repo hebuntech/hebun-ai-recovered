@@ -69,7 +69,7 @@ function createStubServices(
 }
 
 async function main() {
-  const baselineAgent = getAgentById("agent-seo");
+  const baselineAgent = await getAgentById("agent-seo");
 
   const humanMemory: MemoryActorShadowSummary = {
     source: "no-human-registry",
@@ -410,7 +410,7 @@ async function main() {
   });
   assert.equal(invalid.status, "invalid-input");
 
-  assert.deepEqual(getAgentById("agent-seo"), baselineAgent);
+  assert.deepEqual(await getAgentById("agent-seo"), baselineAgent);
 
   console.log("actor-shadow-read service checks passed");
 }

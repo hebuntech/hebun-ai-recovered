@@ -211,3 +211,14 @@ Current result: **NO-GO**. Do not restart Persistence Contract Modernization.
 - [x] Typecheck, lint, 36 regression tests, production build, and `git diff --check` pass.
 
 Phase 3C.0A result: **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive.
+
+### Persistence Contract Modernization Closure — 2026-07-15
+
+- [x] Persistence adapter and repository data operations expose asynchronous contracts.
+- [x] Agent, Workflow, Memory, Knowledge, Registry, and Actor Shadow consumers handle persistence promises explicitly.
+- [x] Runtime services, projection builders, executive Dashboard reads, and Director AI retain synchronous snapshot semantics.
+- [x] Memory snapshot subscriptions and transaction rollback isolation pass focused verification.
+- [x] PostgreSQL remains available, passive, non-authoritative, and fail-closed for unsupported operations.
+- [x] Typecheck, ESLint with zero errors, 36 regression tests, five Runtime Projection tests, 9/9 deterministic builders, semantic parity, and the 192-page production build pass.
+
+Persistence Contract Modernization is **COMPLETE**. This does not complete the Persistence Cutover gate: PostgreSQL activation, restart durability, tenant isolation, real PostgreSQL transaction support, projection hydration/refresh orchestration, backup, and recovery remain incomplete.
