@@ -233,3 +233,15 @@ Persistence Contract Modernization is **COMPLETE**. This does not complete the P
 - [x] TypeScript, ESLint with zero errors, 38 regression tests, 32/32 PostgreSQL conformance checks, Runtime Projection parity, and the 192-page production build pass.
 
 Phase 3C.1 is **COMPLETE WITH MINOR DEBT**. The supported-row invariant rejects nullable registry `description` or `owner` values until a future registry domain contract explicitly represents those nullable schema states. This phase does not complete PostgreSQL activation, RLS, tenant provisioning, additional collection support, Unit of Work, projection refresh/cutover, backup, or recovery.
+
+### Phase 3C.2 PostgreSQL Knowledge Nodes Foundation — 2026-07-16
+
+- [x] `knowledge-nodes` has a collection-specific, lossless supported-row codec using `ref_id` as the application logical ID.
+- [x] Every PostgreSQL knowledge-node operation requires explicit tenant context and fails closed for invalid rows, duplicate logical IDs, or unsupported collections.
+- [x] CRUD, deterministic atomic hydration, immutable snapshots, and transaction commit/rollback isolation pass against a fresh disposable database with all 11 migrations.
+- [x] Knowledge Shadow verification confirms canonical identity and content parity without making PostgreSQL authoritative.
+- [x] PostgreSQL provider capabilities and diagnostics report only the implemented `registries` and `knowledge-nodes` scope.
+- [x] Memory remains active and authoritative; PostgreSQL remains passive and disconnected from Runtime Projection startup.
+- [x] TypeScript, ESLint with zero errors, 40 regression tests, PostgreSQL conformance, Runtime Projection parity, and the 192-page production build pass.
+
+Phase 3C.2 is **COMPLETE WITH MINOR DEBT**. Database-enforced `ref_id` uniqueness, convergence with canonical-governance lifecycle state, knowledge relationships, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain outside this foundation.

@@ -312,3 +312,11 @@ The passive PostgreSQL adapter implements real persistence for `registries` only
 Registry logical IDs remain slugs and physical PostgreSQL UUIDs remain internal. Supported rows require non-null `description` and `owner`; an invalid nullable row fails the complete hydration before snapshot replacement. Transaction commits publish one final snapshot notification, while rollback preserves the prior snapshot without notification or intermediate visibility.
 
 Disposable PostgreSQL conformance passes 32/32 after applying all 11 migrations, the complete suite passes 38/38, all nine projection builders remain deterministic, semantic parity passes, and the production build generates 192/192 pages. Phase 3C.1 is **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive.
+
+### Phase 3C.2 PostgreSQL Knowledge Nodes Foundation — 2026-07-16
+
+The passive PostgreSQL adapter now supports explicit tenant-scoped hydration and persistence for `knowledge-nodes`. This adapter snapshot remains isolated from Runtime Projection bootstrap: no automatic hydration, refresh loop, dual write, provider selection, or runtime cutover path was introduced.
+
+Knowledge node logical IDs remain `ref_id` values and physical PostgreSQL UUIDs remain internal. Required direct fields and the versioned `provenance.hebunKnowledgeCrudV1` envelope define the supported-row invariant. Invalid or duplicate rows reject the complete hydration while preserving the previous immutable snapshot without notification.
+
+Disposable PostgreSQL conformance covers CRUD, deterministic ordering, tenant isolation, commit/rollback atomicity, invalid-row preservation, and Knowledge Shadow identity/content parity. The complete suite passes 40/40, all nine projection builders retain deterministic semantic parity, and the production build generates 192/192 pages. Phase 3C.2 is **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive.

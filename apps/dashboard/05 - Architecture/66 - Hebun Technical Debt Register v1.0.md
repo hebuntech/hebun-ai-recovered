@@ -176,3 +176,11 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - Supported rows require non-null `description` and `owner`. Schema-valid nullable rows fail closed as invalid mappings, and failed hydration preserves the last valid snapshot atomically.
 - Explicit hydration, synchronous snapshots/subscriptions, CRUD, tenant-scoped clear, and adapter-level transaction commit/rollback isolation are verified on a disposable migrated PostgreSQL database.
 - Memory remains active and authoritative. PostgreSQL remains passive. RLS, tenant provisioning, additional collections, Unit of Work, provider activation, projection cutover, backup, and recovery remain future work.
+
+### Phase 3C.2 PostgreSQL Knowledge Nodes Foundation — 2026-07-16
+
+- The passive PostgreSQL adapter now supports tenant-scoped persistence for `knowledge-nodes` in addition to `registries`.
+- Knowledge node logical IDs map to `knowledge_nodes.ref_id`; physical PostgreSQL UUIDs remain internal. Fields without canonical columns use the versioned `provenance.hebunKnowledgeCrudV1` envelope.
+- Null required fields, malformed or unknown envelopes, duplicate logical IDs, and cross-tenant operations fail closed. Failed hydration preserves the previous immutable snapshot without notification.
+- CRUD, deterministic hydration, transaction commit/rollback isolation, Knowledge Shadow identity/content parity, and complete Runtime Projection regression are verified on a disposable migrated PostgreSQL database.
+- Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced logical-ID uniqueness, canonical-governance lifecycle convergence, knowledge relationships, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.
