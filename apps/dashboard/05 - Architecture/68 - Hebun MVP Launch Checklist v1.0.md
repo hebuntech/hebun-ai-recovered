@@ -222,3 +222,14 @@ Phase 3C.0A result: **COMPLETE WITH MINOR DEBT**. Memory remains authoritative a
 - [x] Typecheck, ESLint with zero errors, 36 regression tests, five Runtime Projection tests, 9/9 deterministic builders, semantic parity, and the 192-page production build pass.
 
 Persistence Contract Modernization is **COMPLETE**. This does not complete the Persistence Cutover gate: PostgreSQL activation, restart durability, tenant isolation, real PostgreSQL transaction support, projection hydration/refresh orchestration, backup, and recovery remain incomplete.
+
+### Phase 3C.1 PostgreSQL Registry Foundation — 2026-07-15
+
+- [x] `registries` has a collection-specific, lossless supported-row codec.
+- [x] Every PostgreSQL registry data operation requires explicit tenant context and fails closed before SQL when it is absent.
+- [x] Registry CRUD, explicit atomic hydration, synchronous snapshot/subscription behavior, and adapter-level transaction rollback isolation pass against a fresh disposable database with all 11 migrations.
+- [x] PostgreSQL provider capabilities and diagnostics report only the implemented `registries` scope.
+- [x] Memory remains active and authoritative; PostgreSQL remains passive and is not connected to Runtime Projection startup.
+- [x] TypeScript, ESLint with zero errors, 38 regression tests, 32/32 PostgreSQL conformance checks, Runtime Projection parity, and the 192-page production build pass.
+
+Phase 3C.1 is **COMPLETE WITH MINOR DEBT**. The supported-row invariant rejects nullable registry `description` or `owner` values until a future registry domain contract explicitly represents those nullable schema states. This phase does not complete PostgreSQL activation, RLS, tenant provisioning, additional collection support, Unit of Work, projection refresh/cutover, backup, or recovery.

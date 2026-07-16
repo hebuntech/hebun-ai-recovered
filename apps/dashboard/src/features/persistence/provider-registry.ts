@@ -34,18 +34,20 @@ export async function listRegisteredPersistenceProviders(
   };
 
   const postgresAdapter = createPostgresAdapter({
-    collection: "__provider_registry__",
+    collection: "registries",
     seed: () => [],
     env,
   });
   const postgresHealth = await postgresAdapter.health();
+  await postgresAdapter.dispose();
   const postgres: PersistenceProviderDescriptor = {
     key: "postgres",
     label: "PostgreSQL",
     status: "available",
     active: false,
-    capabilities: ADAPTER_CAPABILITIES,
-    collections: [],
+    capabilities: postgresAdapter.capabilities,
+    collections: [...postgresAdapter.manifest.supportedCollections],
+    manifest: postgresAdapter.manifest,
     health: {
       state: env[PERSISTENCE_POSTGRES_DATABASE_URL_ENV]
         ? postgresHealth.ok
@@ -57,7 +59,7 @@ export async function listRegisteredPersistenceProviders(
       latencyMs: postgresHealth.latencyMs,
       detail: env[PERSISTENCE_POSTGRES_DATABASE_URL_ENV]
         ? postgresHealth.ok
-          ? "Passive provider is reachable."
+          ? "Passive provider is reachable and the registries object is available."
           : "Passive provider health check failed."
         : `${PERSISTENCE_POSTGRES_DATABASE_URL_ENV} is not set.`,
     },

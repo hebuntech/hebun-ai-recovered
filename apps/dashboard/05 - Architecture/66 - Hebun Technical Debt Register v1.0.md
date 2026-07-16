@@ -168,3 +168,11 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - Memory remains the active authoritative provider. PostgreSQL remains available, passive, and fail-closed for every unsupported data operation.
 - The synchronous `getSnapshot()` and `subscribe()` bridge, transaction commit notification, failed-transaction rollback isolation, actor-shadow async query consumption, and all five domain CRUD consumer boundaries are verified.
 - PostgreSQL activation, tenant isolation, real PostgreSQL transactions, projection hydration/refresh orchestration, and provider cutover remain separate workstreams.
+
+### Phase 3C.1 PostgreSQL Registry Foundation — 2026-07-15
+
+- The passive PostgreSQL adapter now supports real, tenant-scoped persistence for the `registries` collection only.
+- Registry logical IDs map to `registries.slug`; physical PostgreSQL UUIDs remain internal and never replace application IDs.
+- Supported rows require non-null `description` and `owner`. Schema-valid nullable rows fail closed as invalid mappings, and failed hydration preserves the last valid snapshot atomically.
+- Explicit hydration, synchronous snapshots/subscriptions, CRUD, tenant-scoped clear, and adapter-level transaction commit/rollback isolation are verified on a disposable migrated PostgreSQL database.
+- Memory remains active and authoritative. PostgreSQL remains passive. RLS, tenant provisioning, additional collections, Unit of Work, provider activation, projection cutover, backup, and recovery remain future work.

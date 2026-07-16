@@ -31,8 +31,8 @@ async function assertPassiveFailure(
 
   assert.ok(failure instanceof Error, `${operation} must fail with an Error`);
   const typed = failure as PassiveErrorShape;
-  assert.equal(typed.name, "UnsupportedPostgresPersistenceOperationError");
-  assert.equal(typed.code, "PERSISTENCE_OPERATION_UNSUPPORTED");
+  assert.equal(typed.name, "PostgresPersistenceError");
+  assert.equal(typed.code, "PERSISTENCE_COLLECTION_UNSUPPORTED");
   assert.equal(typed.provider, "postgres");
   assert.equal(typed.collection, "provider-test");
   assert.equal(typed.operation, operation);
@@ -49,6 +49,8 @@ async function main() {
   assert.equal(providers[1]?.key, "postgres");
   assert.equal(providers[1]?.status, "available");
   assert.equal(providers[1]?.active, false);
+  assert.deepEqual(providers[1]?.collections, ["registries"]);
+  assert.deepEqual(providers[1]?.manifest?.supportedCollections, ["registries"]);
 
   const memory = createMemoryAdapter<SampleEntity>({
     collection: "memory-provider-test",

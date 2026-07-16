@@ -304,3 +304,11 @@ The post-projection persistence contract now preserves the intended split:
 - PostgreSQL advertises no read, write, transaction, tenant-isolation, soft-delete, or optimistic-versioning capability and rejects every data operation in passive mode
 
 Focused persistence, Actor Shadow, and Runtime Projection verification passes alongside 36/36 regression tests, 9/9 deterministic projection builders, semantic parity, TypeScript, ESLint with zero errors, and the 192-page production build. Persistence Contract Modernization is **COMPLETE**. Memory remains authoritative and PostgreSQL remains passive. Activation, tenant isolation, real PostgreSQL transactions, hydration/refresh orchestration, and cutover are not part of this closure.
+
+### Phase 3C.1 PostgreSQL Registry Foundation — 2026-07-15
+
+The passive PostgreSQL adapter implements real persistence for `registries` only. Explicit tenant-scoped hydration may populate that adapter's synchronous immutable snapshot, but no automatic startup, background refresh, Runtime Projection hydration, dual write, or provider selection path was introduced.
+
+Registry logical IDs remain slugs and physical PostgreSQL UUIDs remain internal. Supported rows require non-null `description` and `owner`; an invalid nullable row fails the complete hydration before snapshot replacement. Transaction commits publish one final snapshot notification, while rollback preserves the prior snapshot without notification or intermediate visibility.
+
+Disposable PostgreSQL conformance passes 32/32 after applying all 11 migrations, the complete suite passes 38/38, all nine projection builders remain deterministic, semantic parity passes, and the production build generates 192/192 pages. Phase 3C.1 is **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive.
