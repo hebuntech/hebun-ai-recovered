@@ -1,13 +1,21 @@
-/* Passive PostgreSQL persistence foundation. Only registries are supported. */
+/* Passive PostgreSQL persistence foundation. Runtime provider selection is unchanged. */
 import { Pool, type PoolClient, type QueryResult } from "pg";
 import type { HealthReporting } from "@/db/config/adapter-contract";
 import type { DatabaseHealth } from "@/db/config/connection-contract";
+import type { AgentCrudRecord } from "@/features/agent-crud/types";
 import type { KnowledgeNodeRecord } from "@/features/knowledge-crud/types";
 import type { RegistryCrudRecord } from "@/features/registry-crud/types";
 import type { PersistenceAdapter } from "./adapter";
 import { createEmitter, type Emitter } from "./persistence-events";
 import { recordOperation } from "./persistence-history";
 import { trackOperation } from "./persistence-telemetry";
+import {
+  decodeAgentRow,
+  decodeAgentRows,
+  encodeAgentRecord,
+  type AgentPostgresRow,
+  type AgentPostgresWriteRow,
+} from "./agent-postgres-codec";
 import {
   decodeKnowledgeNodeRow,
   decodeKnowledgeNodeRows,
@@ -39,9 +47,9 @@ const UUID_PATTERN =
 const SUPPORTED_COLLECTIONS: readonly PersistenceCollection[] = [
   "registries",
   "knowledge-nodes",
+  "agents",
 ];
 const KNOWN_UNSUPPORTED_COLLECTIONS: readonly PersistenceCollection[] = [
-  "agents",
   "workflows",
   "memories",
   "knowledge-edges",
@@ -60,6 +68,24 @@ const KNOWLEDGE_NODE_SELECT = `
     from knowledge_nodes
    where tenant_id = $1
    order by ref_id asc nulls last, id asc`;
+const AGENT_SELECT = `
+  select a.id, a.tenant_id, a.department_id, d.name as department_name,
+         d.tenant_id as department_tenant_id, a.name, a.role,
+         a.provider_profile, a.lifecycle_status, a.created_at, a.updated_at,
+         (
+           select count(*)::int
+             from departments matching_department
+            where matching_department.tenant_id = a.tenant_id
+              and matching_department.name =
+                  a.provider_profile->'hebunAgentCrudV1'->>'department'
+         ) as department_match_count
+    from agents a
+    left join departments d
+      on d.id = a.department_id
+     and d.tenant_id = a.tenant_id
+   where a.tenant_id = $1
+   order by a.provider_profile->'hebunAgentCrudV1'->>'logicalId' asc nulls last,
+            a.id asc`;
 
 let operationSequence = 0;
 
@@ -323,9 +349,12 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
   }
 
   private decodeRows(
-    rows: RegistryPostgresRow[] | KnowledgeNodePostgresRow[],
+    rows: RegistryPostgresRow[] | KnowledgeNodePostgresRow[] | AgentPostgresRow[],
     tenantId: string,
   ): T[] {
+    if (this.collection === "agents") {
+      return decodeAgentRows(rows as AgentPostgresRow[], tenantId) as unknown as T[];
+    }
     if (this.collection === "knowledge-nodes") {
       return decodeKnowledgeNodeRows(
         rows as KnowledgeNodePostgresRow[],
@@ -338,6 +367,10 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
   }
 
   private async readRows(client: PoolClient, tenantId: string): Promise<T[]> {
+    if (this.collection === "agents") {
+      const result = await client.query<AgentPostgresRow>(AGENT_SELECT, [tenantId]);
+      return this.decodeRows(result.rows, tenantId);
+    }
     if (this.collection === "knowledge-nodes") {
       const result = await client.query<KnowledgeNodePostgresRow>(
         KNOWLEDGE_NODE_SELECT,
@@ -511,6 +544,112 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     return decodeKnowledgeNodeRow(result.rows[0], row.tenantId);
   }
 
+  private async resolveAgentDepartment(
+    client: PoolClient,
+    tenantId: string,
+    department: string,
+  ): Promise<string> {
+    const result = await client.query<{ id: string }>(
+      `select id
+         from departments
+        where tenant_id = $1 and name = $2
+        order by id asc`,
+      [tenantId, department],
+    );
+    if (result.rows.length !== 1) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_INVALID_RECORD_MAPPING",
+        collection: this.collection,
+        detail: `Agent department "${department}" must resolve to exactly one row for the tenant.`,
+      });
+    }
+    return result.rows[0]!.id;
+  }
+
+  private async insertAgentRow(
+    client: PoolClient,
+    row: AgentPostgresWriteRow,
+  ): Promise<AgentCrudRecord> {
+    const existing = await this.findAgentRowById(client, row.tenantId, row.logicalId);
+    if (existing) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+        collection: this.collection,
+        operation: "create",
+        detail: `Agent "${row.logicalId}" already exists for the tenant.`,
+      });
+    }
+    const departmentId = await this.resolveAgentDepartment(
+      client,
+      row.tenantId,
+      row.department,
+    );
+    await client.query(
+      `insert into agents
+        (tenant_id, department_id, name, role, provider_profile,
+         lifecycle_status, created_at, updated_at)
+       values ($1, $2, $3, $4, $5::jsonb, $6::lifecycle_status, $7, $8)`,
+      [
+        row.tenantId,
+        departmentId,
+        row.name,
+        row.role,
+        JSON.stringify(row.providerProfilePatch),
+        row.lifecycleStatus,
+        row.createdAt,
+        row.updatedAt,
+      ],
+    );
+    const inserted = await this.findAgentRowById(
+      client,
+      row.tenantId,
+      row.logicalId,
+    );
+    if (!inserted) throw this.notFound("create", row.logicalId);
+    return decodeAgentRow(inserted, row.tenantId);
+  }
+
+  private async updateAgentRow(
+    client: PoolClient,
+    row: AgentPostgresWriteRow,
+    physicalId: string,
+  ): Promise<AgentCrudRecord> {
+    const departmentId = await this.resolveAgentDepartment(
+      client,
+      row.tenantId,
+      row.department,
+    );
+    const result = await client.query(
+      `update agents
+          set department_id = $3,
+              name = $4,
+              role = $5,
+              provider_profile = coalesce(provider_profile, '{}'::jsonb) || $6::jsonb,
+              lifecycle_status = $7::lifecycle_status,
+              deleted_at = case when $7::text = 'deleted' then coalesce(deleted_at, now()) else null end,
+              updated_at = $8
+        where tenant_id = $1 and id = $2`,
+      [
+        row.tenantId,
+        physicalId,
+        departmentId,
+        row.name,
+        row.role,
+        JSON.stringify(row.providerProfilePatch),
+        row.lifecycleStatus,
+        row.updatedAt,
+      ],
+    );
+    if (result.rowCount !== 1) throw this.notFound("update", row.logicalId);
+    const updated = await this.findAgentRowById(
+      client,
+      row.tenantId,
+      row.logicalId,
+    );
+    if (!updated) throw this.notFound("update", row.logicalId);
+    return decodeAgentRow(updated, row.tenantId);
+  }
+
   async load(context?: PersistenceContext): Promise<T[]> {
     const records = await this.runRead("load", context, (client, tenantId) =>
       this.readRows(client, tenantId),
@@ -523,6 +662,47 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async save(records: T[], context?: PersistenceContext): Promise<void> {
     await this.runMutation("save", context, async (client, tenantId) => {
+      if (this.collection === "agents") {
+        const encoded = records.map((record) =>
+          encodeAgentRecord(record as unknown as AgentCrudRecord, tenantId),
+        );
+        const ids = new Set<string>();
+        for (const row of encoded) {
+          if (ids.has(row.logicalId)) {
+            throw postgresPersistenceError({
+              code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+              collection: this.collection,
+              operation: "save",
+              detail: `Duplicate Agent logical id "${row.logicalId}" exists in the save input.`,
+            });
+          }
+          ids.add(row.logicalId);
+        }
+
+        await this.readRows(client, tenantId);
+        if (encoded.length === 0) {
+          await client.query("delete from agents where tenant_id = $1", [tenantId]);
+        } else {
+          await client.query(
+            `delete from agents
+              where tenant_id = $1
+                and not (
+                  provider_profile->'hebunAgentCrudV1'->>'logicalId' = any($2::text[])
+                )`,
+            [tenantId, encoded.map((row) => row.logicalId)],
+          );
+        }
+        for (const row of encoded) {
+          const existing = await this.findAgentRowById(
+            client,
+            tenantId,
+            row.logicalId,
+          );
+          if (existing) await this.updateAgentRow(client, row, existing.id);
+          else await this.insertAgentRow(client, row);
+        }
+        return;
+      }
       if (this.collection === "knowledge-nodes") {
         const encoded = records.map((record) =>
           encodeKnowledgeNodeRecord(
@@ -575,6 +755,13 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async create(record: T, context?: PersistenceContext): Promise<T> {
     return this.runMutation("create", context, async (client, tenantId) => {
+      if (this.collection === "agents") {
+        const row = encodeAgentRecord(
+          record as unknown as AgentCrudRecord,
+          tenantId,
+        );
+        return (await this.insertAgentRow(client, row)) as unknown as T;
+      }
       if (this.collection === "knowledge-nodes") {
         const row = encodeKnowledgeNodeRecord(
           record as unknown as KnowledgeNodeRecord,
@@ -596,6 +783,20 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     context?: PersistenceContext,
   ): Promise<T | undefined> {
     return this.runMutation("update", context, async (client, tenantId) => {
+      if (this.collection === "agents") {
+        const current = await this.findAgentRowById(client, tenantId, id);
+        if (!current) throw this.notFound("update", id);
+        const merged = {
+          ...decodeAgentRow(current, tenantId),
+          ...(patch as Partial<AgentCrudRecord>),
+          id,
+          updatedAt:
+            (patch as Partial<AgentCrudRecord>).updatedAt ??
+            new Date().toISOString(),
+        } satisfies AgentCrudRecord;
+        const row = encodeAgentRecord(merged, tenantId);
+        return (await this.updateAgentRow(client, row, current.id)) as unknown as T;
+      }
       if (this.collection === "knowledge-nodes") {
         const current = await this.findKnowledgeNodeRowById(client, tenantId, id);
         if (!current) throw this.notFound("update", id);
@@ -662,6 +863,22 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     context?: PersistenceContext,
   ): Promise<T> {
     return this.runMutation(operation, context, async (client, tenantId) => {
+      if (this.collection === "agents") {
+        const current = await this.findAgentRowById(client, tenantId, id);
+        if (!current) throw this.notFound(operation, id);
+        const result = await client.query(
+          `update agents
+              set lifecycle_status = $3::lifecycle_status,
+                  deleted_at = case when $3::text = 'deleted' then now() else null end,
+                  updated_at = now()
+            where tenant_id = $1 and id = $2`,
+          [tenantId, current.id, status],
+        );
+        if (result.rowCount !== 1) throw this.notFound(operation, id);
+        const updated = await this.findAgentRowById(client, tenantId, id);
+        if (!updated) throw this.notFound(operation, id);
+        return decodeAgentRow(updated, tenantId) as unknown as T;
+      }
       if (this.collection === "knowledge-nodes") {
         const result = await client.query<KnowledgeNodePostgresRow>(
           `update knowledge_nodes
@@ -693,6 +910,9 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async exists(id: string, context?: PersistenceContext): Promise<boolean> {
     return this.runRead("exists", context, async (client, tenantId) => {
+      if (this.collection === "agents") {
+        return Boolean(await this.findAgentRowById(client, tenantId, id));
+      }
       if (this.collection === "knowledge-nodes") {
         const result = await client.query<{ exists: boolean }>(
           "select exists(select 1 from knowledge_nodes where tenant_id = $1 and ref_id = $2) as exists",
@@ -726,7 +946,7 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
           code: "PERSISTENCE_OPERATION_UNSUPPORTED",
           collection: this.collection,
           operation: "find",
-          detail: "Registry find requires an explicitly hydrated tenant snapshot.",
+          detail: `${this.collection} find requires an explicitly hydrated tenant snapshot.`,
         });
       }
       const found = immutableRecords(this.snapshot.records.filter(predicate));
@@ -740,6 +960,11 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async clear(context?: PersistenceContext): Promise<void> {
     await this.runMutation("clear", context, async (client, tenantId) => {
+      if (this.collection === "agents") {
+        await this.readRows(client, tenantId);
+        await client.query("delete from agents where tenant_id = $1", [tenantId]);
+        return;
+      }
       if (this.collection === "knowledge-nodes") {
         await this.readRows(client, tenantId);
         await client.query("delete from knowledge_nodes where tenant_id = $1", [
@@ -809,7 +1034,7 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
         code: "PERSISTENCE_TRANSACTION_FAILED",
         collection: this.collection,
         operation: "transaction",
-        detail: "PostgreSQL registry transaction failed and was rolled back.",
+        detail: `PostgreSQL ${this.collection} transaction failed and was rolled back.`,
       });
     } finally {
       client.release();
@@ -850,6 +1075,29 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     return result.rows[0];
   }
 
+  private async findAgentRowById(
+    client: PoolClient,
+    tenantId: string,
+    id: string,
+  ): Promise<AgentPostgresRow | undefined> {
+    const result = await client.query<AgentPostgresRow>(
+      `${AGENT_SELECT.replace(
+        `order by a.provider_profile->'hebunAgentCrudV1'->>'logicalId' asc nulls last,
+            a.id asc`,
+        "",
+      )} and a.provider_profile->'hebunAgentCrudV1'->>'logicalId' = $2`,
+      [tenantId, id],
+    );
+    if (result.rows.length > 1) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+        collection: this.collection,
+        detail: `Duplicate Agent logical id "${id}" exists for the tenant.`,
+      });
+    }
+    return result.rows[0];
+  }
+
   private notFound(
     operation: PersistenceOperation,
     id: string,
@@ -867,17 +1115,21 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     try {
       const result = await this.withClient((client) =>
         client.query<{ relation: string | null }>(
-          this.collection === "knowledge-nodes"
-            ? "select to_regclass('public.knowledge_nodes')::text as relation"
-            : "select to_regclass('public.registries')::text as relation",
+          this.collection === "agents"
+            ? "select to_regclass('public.agents')::text as relation"
+            : this.collection === "knowledge-nodes"
+              ? "select to_regclass('public.knowledge_nodes')::text as relation"
+              : "select to_regclass('public.registries')::text as relation",
         ),
       );
       return {
         ok:
           result.rows[0]?.relation ===
-          (this.collection === "knowledge-nodes"
-            ? "knowledge_nodes"
-            : "registries"),
+          (this.collection === "agents"
+            ? "agents"
+            : this.collection === "knowledge-nodes"
+              ? "knowledge_nodes"
+              : "registries"),
         provider: this.provider,
         latencyMs: Date.now() - startedAt,
         checkedAt: new Date().toISOString(),

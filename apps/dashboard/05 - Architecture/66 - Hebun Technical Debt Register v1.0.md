@@ -184,3 +184,11 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - Null required fields, malformed or unknown envelopes, duplicate logical IDs, and cross-tenant operations fail closed. Failed hydration preserves the previous immutable snapshot without notification.
 - CRUD, deterministic hydration, transaction commit/rollback isolation, Knowledge Shadow identity/content parity, and complete Runtime Projection regression are verified on a disposable migrated PostgreSQL database.
 - Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced logical-ID uniqueness, canonical-governance lifecycle convergence, knowledge relationships, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.
+
+### Phase 3C.3 PostgreSQL Agent Foundation — 2026-07-16
+
+- The passive PostgreSQL adapter now supports explicit tenant-scoped persistence for `agents` in addition to `registries` and `knowledge-nodes`.
+- Agent application IDs remain logical IDs in the versioned `provider_profile.hebunAgentCrudV1` envelope; physical PostgreSQL UUIDs remain internal and continue to serve canonical actor references.
+- Supported rows require a valid envelope and exactly one same-tenant department-name resolution. Invalid, ambiguous, cross-tenant, or duplicate logical rows fail closed and preserve the previous immutable snapshot without notification.
+- CRUD, deterministic hydration, transaction commit/rollback isolation, canonical Actor Read compatibility, Actor Shadow field parity, and complete Runtime Projection, Dashboard, Director AI, and Organizational Intelligence parity are verified on a disposable migrated PostgreSQL database.
+- Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced logical-ID uniqueness, canonical Agent profile convergence, relationship persistence, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.

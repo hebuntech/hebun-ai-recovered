@@ -68,6 +68,7 @@ async function main(): Promise<void> {
     assert.deepEqual(adapter.manifest.supportedCollections, [
       "registries",
       "knowledge-nodes",
+      "agents",
     ]);
     assert.equal(adapter.manifest.transactional, true);
     assert.equal(adapter.manifest.tenantIsolation, false);
@@ -203,7 +204,7 @@ async function main(): Promise<void> {
     assert.equal((await adapter.list(contextB)).length, tenantBCount);
 
     const unsupported = createPostgresAdapter<RegistryCrudRecord>({
-      collection: "agents",
+      collection: "workflows",
       seed: () => [],
       env,
     });
@@ -217,7 +218,11 @@ async function main(): Promise<void> {
     const postgres = providers.find((provider) => provider.key === "postgres");
     assert.equal(postgres?.active, false);
     assert.equal(postgres?.status, "available");
-    assert.deepEqual(postgres?.collections, ["registries", "knowledge-nodes"]);
+    assert.deepEqual(postgres?.collections, [
+      "registries",
+      "knowledge-nodes",
+      "agents",
+    ]);
     assert.deepEqual(postgres?.manifest, adapter.manifest);
     assert.equal(postgres?.health.state, "healthy");
     assert.equal((await adapter.health()).ok, true);

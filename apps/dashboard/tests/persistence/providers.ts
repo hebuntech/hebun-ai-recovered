@@ -49,10 +49,15 @@ async function main() {
   assert.equal(providers[1]?.key, "postgres");
   assert.equal(providers[1]?.status, "available");
   assert.equal(providers[1]?.active, false);
-  assert.deepEqual(providers[1]?.collections, ["registries", "knowledge-nodes"]);
+  assert.deepEqual(providers[1]?.collections, [
+    "registries",
+    "knowledge-nodes",
+    "agents",
+  ]);
   assert.deepEqual(providers[1]?.manifest?.supportedCollections, [
     "registries",
     "knowledge-nodes",
+    "agents",
   ]);
 
   const memory = createMemoryAdapter<SampleEntity>({

@@ -245,3 +245,14 @@ Phase 3C.1 is **COMPLETE WITH MINOR DEBT**. The supported-row invariant rejects 
 - [x] TypeScript, ESLint with zero errors, 40 regression tests, PostgreSQL conformance, Runtime Projection parity, and the 192-page production build pass.
 
 Phase 3C.2 is **COMPLETE WITH MINOR DEBT**. Database-enforced `ref_id` uniqueness, convergence with canonical-governance lifecycle state, knowledge relationships, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain outside this foundation.
+
+### Phase 3C.3 PostgreSQL Agent Foundation — 2026-07-16
+
+- [x] `agents` has a lossless supported-row codec with a versioned metadata envelope and internal-only physical UUIDs.
+- [x] Tenant context, supported-row validation, department resolution, deterministic hydration, immutable snapshots, and transaction rollback isolation pass against a fresh database with all 11 migrations.
+- [x] Canonical Actor Read and Actor Shadow preserve the physical actor boundary while matching supported Agent name and department fields.
+- [x] Runtime Projection, Director Dashboard, Director AI, and Organizational Intelligence remain isolated and retain semantic parity.
+- [x] PostgreSQL diagnostics report `registries`, `knowledge-nodes`, and `agents`; Memory remains active and PostgreSQL remains passive.
+- [x] TypeScript, ESLint with zero errors, 42 regression tests, 9/9 deterministic projection builders, and the 192-page production build pass.
+
+Phase 3C.3 is **COMPLETE WITH MINOR DEBT**. Database-enforced logical-ID uniqueness, canonical Agent profile convergence, relationships, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain outside this foundation.

@@ -320,3 +320,13 @@ The passive PostgreSQL adapter now supports explicit tenant-scoped hydration and
 Knowledge node logical IDs remain `ref_id` values and physical PostgreSQL UUIDs remain internal. Required direct fields and the versioned `provenance.hebunKnowledgeCrudV1` envelope define the supported-row invariant. Invalid or duplicate rows reject the complete hydration while preserving the previous immutable snapshot without notification.
 
 Disposable PostgreSQL conformance covers CRUD, deterministic ordering, tenant isolation, commit/rollback atomicity, invalid-row preservation, and Knowledge Shadow identity/content parity. The complete suite passes 40/40, all nine projection builders retain deterministic semantic parity, and the production build generates 192/192 pages. Phase 3C.2 is **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive.
+
+### Phase 3C.3 PostgreSQL Agent Foundation — 2026-07-16
+
+The passive PostgreSQL adapter now supports explicit tenant-scoped hydration and persistence for `agents`. Agent logical identity is stored in `provider_profile.hebunAgentCrudV1`, while physical PostgreSQL UUIDs remain internal canonical actor references.
+
+Supported hydration requires a valid envelope and exactly one matching department in the same tenant. Invalid, ambiguous, duplicate, or cross-tenant rows reject the complete hydration while preserving the previous immutable snapshot without notification. Transaction commits publish one final snapshot; rollback exposes neither intermediate state nor notification.
+
+All nine projection data snapshots, the Director Dashboard, Director AI, and Organizational Intelligence retain semantic parity. The complete suite passes 42/42 and the production build generates 192/192 pages.
+
+Phase 3C.3 is **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive. No automatic hydration, dual write, provider activation, runtime cutover, projection redesign, schema change, or migration was introduced.
