@@ -256,3 +256,15 @@ Phase 3C.2 is **COMPLETE WITH MINOR DEBT**. Database-enforced `ref_id` uniquenes
 - [x] TypeScript, ESLint with zero errors, 42 regression tests, 9/9 deterministic projection builders, and the 192-page production build pass.
 
 Phase 3C.3 is **COMPLETE WITH MINOR DEBT**. Database-enforced logical-ID uniqueness, canonical Agent profile convergence, relationships, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain outside this foundation.
+
+### Phase 3C.4 PostgreSQL Workflow Foundation — 2026-07-16
+
+- [x] `workflows` has a lossless supported-row codec using the versioned `orchestration_metadata.hebunWorkflowCrudV1` envelope and internal-only physical UUIDs.
+- [x] Adapter ownership excludes and preserves canonical-only Workflow rows, metadata siblings, relationships, lifecycle, health, and execution strategy.
+- [x] CRUD, deterministic hydration, adapter-owned save/clear reconciliation, immutable snapshots, and transaction commit/rollback isolation pass against a fresh database with all 11 migrations.
+- [x] Foreign-key-protected reconciliation rolls back atomically without snapshot replacement or notification.
+- [x] Execution Lineage, Execution Shadow, all nine Runtime Projection builders, Director Dashboard, Director AI, and Organizational Intelligence retain compatibility and semantic parity.
+- [x] PostgreSQL diagnostics report `registries`, `knowledge-nodes`, `agents`, and `workflows`; Memory remains active and PostgreSQL remains passive.
+- [x] TypeScript, ESLint with zero errors, 44 regression tests, and the 192-page production build pass.
+
+Phase 3C.4 is **COMPLETE WITH MINOR DEBT**. Tenant-level Workflow logical-ID uniqueness remains application-enforced while PostgreSQL is passive. RLS, tenant provisioning, automatic hydration, dual write, provider activation, runtime cutover, backup, and recovery remain outside this foundation.

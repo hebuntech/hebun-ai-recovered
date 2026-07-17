@@ -53,11 +53,13 @@ async function main() {
     "registries",
     "knowledge-nodes",
     "agents",
+    "workflows",
   ]);
   assert.deepEqual(providers[1]?.manifest?.supportedCollections, [
     "registries",
     "knowledge-nodes",
     "agents",
+    "workflows",
   ]);
 
   const memory = createMemoryAdapter<SampleEntity>({

@@ -330,3 +330,13 @@ Supported hydration requires a valid envelope and exactly one matching departmen
 All nine projection data snapshots, the Director Dashboard, Director AI, and Organizational Intelligence retain semantic parity. The complete suite passes 42/42 and the production build generates 192/192 pages.
 
 Phase 3C.3 is **COMPLETE WITH MINOR DEBT**. Memory remains authoritative and PostgreSQL remains passive. No automatic hydration, dual write, provider activation, runtime cutover, projection redesign, schema change, or migration was introduced.
+
+### Phase 3C.4 PostgreSQL Workflow Foundation — 2026-07-16
+
+The passive PostgreSQL adapter now supports explicit tenant-scoped hydration and persistence for `workflows`. Workflow logical identity is stored in `orchestration_metadata.hebunWorkflowCrudV1`, while physical PostgreSQL UUIDs remain internal canonical lineage references.
+
+Only rows carrying the adapter-owned envelope participate in hydration, save, and clear. Canonical-only rows, metadata siblings, Mission, Goal, Plan, owner, lifecycle, health, execution graph, execution strategy, rollback, and compensation state remain unchanged. Invalid or duplicate owned rows reject hydration atomically, and foreign-key-protected reconciliation rolls back without snapshot replacement or notification.
+
+Execution Lineage, Execution Shadow, all nine Runtime Projection data snapshots, the Director Dashboard, Director AI, and Organizational Intelligence retain semantic parity. The complete suite passes 44/44 and the production build generates 192/192 pages.
+
+Phase 3C.4 is **COMPLETE WITH MINOR DEBT**. Tenant-level logical-ID uniqueness remains application-enforced. Memory remains authoritative and PostgreSQL remains passive; no automatic hydration, dual write, provider activation, runtime cutover, projection redesign, schema change, migration, or resolver was introduced.

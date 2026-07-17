@@ -48,16 +48,27 @@ export async function listRegisteredPersistenceProviders(
     seed: () => [],
     env,
   });
-  const [postgresHealth, knowledgeNodeHealth, agentHealth] = await Promise.all([
-    postgresAdapter.health(),
-    knowledgeNodeAdapter.health(),
-    agentAdapter.health(),
-  ]);
+  const workflowAdapter = createPostgresAdapter({
+    collection: "workflows",
+    seed: () => [],
+    env,
+  });
+  const [postgresHealth, knowledgeNodeHealth, agentHealth, workflowHealth] =
+    await Promise.all([
+      postgresAdapter.health(),
+      knowledgeNodeAdapter.health(),
+      agentAdapter.health(),
+      workflowAdapter.health(),
+    ]);
   await postgresAdapter.dispose();
   await knowledgeNodeAdapter.dispose();
   await agentAdapter.dispose();
+  await workflowAdapter.dispose();
   const postgresHealthy =
-    postgresHealth.ok && knowledgeNodeHealth.ok && agentHealth.ok;
+    postgresHealth.ok &&
+    knowledgeNodeHealth.ok &&
+    agentHealth.ok &&
+    workflowHealth.ok;
   const postgres: PersistenceProviderDescriptor = {
     key: "postgres",
     label: "PostgreSQL",
@@ -77,7 +88,7 @@ export async function listRegisteredPersistenceProviders(
       latencyMs: postgresHealth.latencyMs,
       detail: env[PERSISTENCE_POSTGRES_DATABASE_URL_ENV]
         ? postgresHealthy
-          ? "Passive provider is reachable and the registries, knowledge_nodes, and agents objects are available."
+          ? "Passive provider is reachable and the registries, knowledge_nodes, agents, and workflows objects are available."
           : "Passive provider health check failed."
         : `${PERSISTENCE_POSTGRES_DATABASE_URL_ENV} is not set.`,
     },

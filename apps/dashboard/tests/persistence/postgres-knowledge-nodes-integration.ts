@@ -91,6 +91,7 @@ async function main(): Promise<void> {
       "registries",
       "knowledge-nodes",
       "agents",
+      "workflows",
     ]);
     assert.equal(adapter.manifest.transactional, true);
     assert.equal(adapter.manifest.tenantIsolation, false);
@@ -341,6 +342,7 @@ async function main(): Promise<void> {
       "registries",
       "knowledge-nodes",
       "agents",
+      "workflows",
     ]);
     assert.equal(postgres?.health.state, "healthy");
     assert.equal((await adapter.health()).ok, true);

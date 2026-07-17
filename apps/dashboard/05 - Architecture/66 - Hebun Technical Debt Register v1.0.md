@@ -192,3 +192,11 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - Supported rows require a valid envelope and exactly one same-tenant department-name resolution. Invalid, ambiguous, cross-tenant, or duplicate logical rows fail closed and preserve the previous immutable snapshot without notification.
 - CRUD, deterministic hydration, transaction commit/rollback isolation, canonical Actor Read compatibility, Actor Shadow field parity, and complete Runtime Projection, Dashboard, Director AI, and Organizational Intelligence parity are verified on a disposable migrated PostgreSQL database.
 - Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced logical-ID uniqueness, canonical Agent profile convergence, relationship persistence, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.
+
+### Phase 3C.4 PostgreSQL Workflow Foundation — 2026-07-16
+
+- The passive PostgreSQL adapter now supports explicit tenant-scoped persistence for `workflows` in addition to `registries`, `knowledge-nodes`, and `agents`.
+- Workflow application IDs remain logical IDs in `orchestration_metadata.hebunWorkflowCrudV1`; physical PostgreSQL UUIDs remain internal and preserve canonical execution-lineage references.
+- Adapter-owned rows are isolated by the versioned envelope. Canonical-only rows and canonical Mission, Goal, Plan, ownership, lifecycle, health, execution, rollback, and compensation fields remain untouched.
+- Invalid, unknown-version, or duplicate logical rows fail closed. Save and clear reconcile only adapter-owned rows, and inbound foreign-key failures roll back without replacing the previous immutable snapshot or notifying subscribers.
+- Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced tenant-level logical-ID uniqueness, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.

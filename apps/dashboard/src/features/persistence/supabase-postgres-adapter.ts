@@ -5,6 +5,7 @@ import type { DatabaseHealth } from "@/db/config/connection-contract";
 import type { AgentCrudRecord } from "@/features/agent-crud/types";
 import type { KnowledgeNodeRecord } from "@/features/knowledge-crud/types";
 import type { RegistryCrudRecord } from "@/features/registry-crud/types";
+import type { WorkflowCrudRecord } from "@/features/workflow-crud/types";
 import type { PersistenceAdapter } from "./adapter";
 import { createEmitter, type Emitter } from "./persistence-events";
 import { recordOperation } from "./persistence-history";
@@ -33,6 +34,13 @@ import {
   type RegistryPostgresRow,
   type RegistryPostgresWriteRow,
 } from "./registry-postgres-codec";
+import {
+  decodeWorkflowRow,
+  decodeWorkflowRows,
+  encodeWorkflowRecord,
+  type WorkflowPostgresRow,
+  type WorkflowPostgresWriteRow,
+} from "./workflow-postgres-codec";
 import type {
   PersistedEntity,
   PersistenceCollection,
@@ -48,9 +56,9 @@ const SUPPORTED_COLLECTIONS: readonly PersistenceCollection[] = [
   "registries",
   "knowledge-nodes",
   "agents",
+  "workflows",
 ];
 const KNOWN_UNSUPPORTED_COLLECTIONS: readonly PersistenceCollection[] = [
-  "workflows",
   "memories",
   "knowledge-edges",
   "knowledge-relationships",
@@ -86,6 +94,14 @@ const AGENT_SELECT = `
    where a.tenant_id = $1
    order by a.provider_profile->'hebunAgentCrudV1'->>'logicalId' asc nulls last,
             a.id asc`;
+const WORKFLOW_SELECT = `
+  select id, tenant_id, name, description, orchestration_metadata,
+         lifecycle_status, created_at, updated_at
+    from workflows
+   where tenant_id = $1
+     and orchestration_metadata ? 'hebunWorkflowCrudV1'
+   order by orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' asc nulls last,
+            id asc`;
 
 let operationSequence = 0;
 
@@ -349,7 +365,11 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
   }
 
   private decodeRows(
-    rows: RegistryPostgresRow[] | KnowledgeNodePostgresRow[] | AgentPostgresRow[],
+    rows:
+      | RegistryPostgresRow[]
+      | KnowledgeNodePostgresRow[]
+      | AgentPostgresRow[]
+      | WorkflowPostgresRow[],
     tenantId: string,
   ): T[] {
     if (this.collection === "agents") {
@@ -358,6 +378,12 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     if (this.collection === "knowledge-nodes") {
       return decodeKnowledgeNodeRows(
         rows as KnowledgeNodePostgresRow[],
+        tenantId,
+      ) as unknown as T[];
+    }
+    if (this.collection === "workflows") {
+      return decodeWorkflowRows(
+        rows as WorkflowPostgresRow[],
         tenantId,
       ) as unknown as T[];
     }
@@ -376,6 +402,12 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
         KNOWLEDGE_NODE_SELECT,
         [tenantId],
       );
+      return this.decodeRows(result.rows, tenantId);
+    }
+    if (this.collection === "workflows") {
+      const result = await client.query<WorkflowPostgresRow>(WORKFLOW_SELECT, [
+        tenantId,
+      ]);
       return this.decodeRows(result.rows, tenantId);
     }
     const result = await client.query<RegistryPostgresRow>(REGISTRY_SELECT, [tenantId]);
@@ -650,6 +682,79 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     return decodeAgentRow(updated, row.tenantId);
   }
 
+  private async insertWorkflowRow(
+    client: PoolClient,
+    row: WorkflowPostgresWriteRow,
+  ): Promise<WorkflowCrudRecord> {
+    const existing = await this.findWorkflowRowById(
+      client,
+      row.tenantId,
+      row.logicalId,
+    );
+    if (existing) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+        collection: this.collection,
+        operation: "create",
+        detail: `Workflow "${row.logicalId}" already exists for the tenant.`,
+      });
+    }
+    const result = await client.query<WorkflowPostgresRow>(
+      `insert into workflows
+        (tenant_id, name, description, orchestration_metadata,
+         lifecycle_status, created_at, updated_at)
+       values ($1, $2, $3, $4::jsonb, $5::lifecycle_status, $6, $7)
+       returning id, tenant_id, name, description, orchestration_metadata,
+                 lifecycle_status, created_at, updated_at`,
+      [
+        row.tenantId,
+        row.name,
+        row.description,
+        JSON.stringify(row.orchestrationMetadataPatch),
+        row.lifecycleStatus,
+        row.createdAt,
+        row.updatedAt,
+      ],
+    );
+    return decodeWorkflowRow(result.rows[0]!, row.tenantId);
+  }
+
+  private async updateWorkflowRow(
+    client: PoolClient,
+    row: WorkflowPostgresWriteRow,
+    physicalId: string,
+  ): Promise<WorkflowCrudRecord> {
+    const result = await client.query<WorkflowPostgresRow>(
+      `update workflows
+          set name = $3,
+              description = $4,
+              orchestration_metadata =
+                coalesce(orchestration_metadata, '{}'::jsonb) || $5::jsonb,
+              lifecycle_status = $6::lifecycle_status,
+              deleted_at = case
+                when $6::text = 'deleted' then coalesce(deleted_at, now())
+                else null
+              end,
+              updated_at = $7
+        where tenant_id = $1
+          and id = $2
+          and orchestration_metadata ? 'hebunWorkflowCrudV1'
+        returning id, tenant_id, name, description, orchestration_metadata,
+                  lifecycle_status, created_at, updated_at`,
+      [
+        row.tenantId,
+        physicalId,
+        row.name,
+        row.description,
+        JSON.stringify(row.orchestrationMetadataPatch),
+        row.lifecycleStatus,
+        row.updatedAt,
+      ],
+    );
+    if (!result.rows[0]) throw this.notFound("update", row.logicalId);
+    return decodeWorkflowRow(result.rows[0], row.tenantId);
+  }
+
   async load(context?: PersistenceContext): Promise<T[]> {
     const records = await this.runRead("load", context, (client, tenantId) =>
       this.readRows(client, tenantId),
@@ -662,6 +767,57 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async save(records: T[], context?: PersistenceContext): Promise<void> {
     await this.runMutation("save", context, async (client, tenantId) => {
+      if (this.collection === "workflows") {
+        const encoded = records.map((record) =>
+          encodeWorkflowRecord(
+            record as unknown as WorkflowCrudRecord,
+            tenantId,
+          ),
+        );
+        const ids = new Set<string>();
+        for (const row of encoded) {
+          if (ids.has(row.logicalId)) {
+            throw postgresPersistenceError({
+              code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+              collection: this.collection,
+              operation: "save",
+              detail: `Duplicate Workflow logical id "${row.logicalId}" exists in the save input.`,
+            });
+          }
+          ids.add(row.logicalId);
+        }
+
+        await this.readRows(client, tenantId);
+        if (encoded.length === 0) {
+          await client.query(
+            `delete from workflows
+              where tenant_id = $1
+                and orchestration_metadata ? 'hebunWorkflowCrudV1'`,
+            [tenantId],
+          );
+        } else {
+          await client.query(
+            `delete from workflows
+              where tenant_id = $1
+                and orchestration_metadata ? 'hebunWorkflowCrudV1'
+                and not (
+                  orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' =
+                    any($2::text[])
+                )`,
+            [tenantId, encoded.map((row) => row.logicalId)],
+          );
+        }
+        for (const row of encoded) {
+          const existing = await this.findWorkflowRowById(
+            client,
+            tenantId,
+            row.logicalId,
+          );
+          if (existing) await this.updateWorkflowRow(client, row, existing.id);
+          else await this.insertWorkflowRow(client, row);
+        }
+        return;
+      }
       if (this.collection === "agents") {
         const encoded = records.map((record) =>
           encodeAgentRecord(record as unknown as AgentCrudRecord, tenantId),
@@ -755,6 +911,13 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async create(record: T, context?: PersistenceContext): Promise<T> {
     return this.runMutation("create", context, async (client, tenantId) => {
+      if (this.collection === "workflows") {
+        const row = encodeWorkflowRecord(
+          record as unknown as WorkflowCrudRecord,
+          tenantId,
+        );
+        return (await this.insertWorkflowRow(client, row)) as unknown as T;
+      }
       if (this.collection === "agents") {
         const row = encodeAgentRecord(
           record as unknown as AgentCrudRecord,
@@ -783,6 +946,24 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     context?: PersistenceContext,
   ): Promise<T | undefined> {
     return this.runMutation("update", context, async (client, tenantId) => {
+      if (this.collection === "workflows") {
+        const current = await this.findWorkflowRowById(client, tenantId, id);
+        if (!current) throw this.notFound("update", id);
+        const merged = {
+          ...decodeWorkflowRow(current, tenantId),
+          ...(patch as Partial<WorkflowCrudRecord>),
+          id,
+          updatedAt:
+            (patch as Partial<WorkflowCrudRecord>).updatedAt ??
+            new Date().toISOString(),
+        } satisfies WorkflowCrudRecord;
+        const row = encodeWorkflowRecord(merged, tenantId);
+        return (await this.updateWorkflowRow(
+          client,
+          row,
+          current.id,
+        )) as unknown as T;
+      }
       if (this.collection === "agents") {
         const current = await this.findAgentRowById(client, tenantId, id);
         if (!current) throw this.notFound("update", id);
@@ -863,6 +1044,27 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     context?: PersistenceContext,
   ): Promise<T> {
     return this.runMutation(operation, context, async (client, tenantId) => {
+      if (this.collection === "workflows") {
+        const current = await this.findWorkflowRowById(client, tenantId, id);
+        if (!current) throw this.notFound(operation, id);
+        const result = await client.query<WorkflowPostgresRow>(
+          `update workflows
+              set lifecycle_status = $3::lifecycle_status,
+                  deleted_at = case
+                    when $3::text = 'deleted' then now()
+                    else null
+                  end,
+                  updated_at = now()
+            where tenant_id = $1
+              and id = $2
+              and orchestration_metadata ? 'hebunWorkflowCrudV1'
+            returning id, tenant_id, name, description, orchestration_metadata,
+                      lifecycle_status, created_at, updated_at`,
+          [tenantId, current.id, status],
+        );
+        if (!result.rows[0]) throw this.notFound(operation, id);
+        return decodeWorkflowRow(result.rows[0], tenantId) as unknown as T;
+      }
       if (this.collection === "agents") {
         const current = await this.findAgentRowById(client, tenantId, id);
         if (!current) throw this.notFound(operation, id);
@@ -910,6 +1112,9 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async exists(id: string, context?: PersistenceContext): Promise<boolean> {
     return this.runRead("exists", context, async (client, tenantId) => {
+      if (this.collection === "workflows") {
+        return Boolean(await this.findWorkflowRowById(client, tenantId, id));
+      }
       if (this.collection === "agents") {
         return Boolean(await this.findAgentRowById(client, tenantId, id));
       }
@@ -960,6 +1165,16 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async clear(context?: PersistenceContext): Promise<void> {
     await this.runMutation("clear", context, async (client, tenantId) => {
+      if (this.collection === "workflows") {
+        await this.readRows(client, tenantId);
+        await client.query(
+          `delete from workflows
+            where tenant_id = $1
+              and orchestration_metadata ? 'hebunWorkflowCrudV1'`,
+          [tenantId],
+        );
+        return;
+      }
       if (this.collection === "agents") {
         await this.readRows(client, tenantId);
         await client.query("delete from agents where tenant_id = $1", [tenantId]);
@@ -1098,6 +1313,29 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     return result.rows[0];
   }
 
+  private async findWorkflowRowById(
+    client: PoolClient,
+    tenantId: string,
+    id: string,
+  ): Promise<WorkflowPostgresRow | undefined> {
+    const result = await client.query<WorkflowPostgresRow>(
+      `${WORKFLOW_SELECT.replace(
+        `order by orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' asc nulls last,
+            id asc`,
+        "",
+      )} and orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' = $2`,
+      [tenantId, id],
+    );
+    if (result.rows.length > 1) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+        collection: this.collection,
+        detail: `Duplicate Workflow logical id "${id}" exists for the tenant.`,
+      });
+    }
+    return result.rows[0];
+  }
+
   private notFound(
     operation: PersistenceOperation,
     id: string,
@@ -1117,6 +1355,8 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
         client.query<{ relation: string | null }>(
           this.collection === "agents"
             ? "select to_regclass('public.agents')::text as relation"
+            : this.collection === "workflows"
+              ? "select to_regclass('public.workflows')::text as relation"
             : this.collection === "knowledge-nodes"
               ? "select to_regclass('public.knowledge_nodes')::text as relation"
               : "select to_regclass('public.registries')::text as relation",
@@ -1127,6 +1367,8 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
           result.rows[0]?.relation ===
           (this.collection === "agents"
             ? "agents"
+            : this.collection === "workflows"
+              ? "workflows"
             : this.collection === "knowledge-nodes"
               ? "knowledge_nodes"
               : "registries"),
