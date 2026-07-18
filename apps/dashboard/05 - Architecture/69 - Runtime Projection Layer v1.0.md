@@ -340,3 +340,13 @@ Only rows carrying the adapter-owned envelope participate in hydration, save, an
 Execution Lineage, Execution Shadow, all nine Runtime Projection data snapshots, the Director Dashboard, Director AI, and Organizational Intelligence retain semantic parity. The complete suite passes 44/44 and the production build generates 192/192 pages.
 
 Phase 3C.4 is **COMPLETE WITH MINOR DEBT**. Tenant-level logical-ID uniqueness remains application-enforced. Memory remains authoritative and PostgreSQL remains passive; no automatic hydration, dual write, provider activation, runtime cutover, projection redesign, schema change, migration, or resolver was introduced.
+
+### Phase 3C.5 PostgreSQL Memory Foundation — 2026-07-18
+
+The passive PostgreSQL adapter now supports explicit tenant-scoped hydration and persistence for `memories`. Memory logical identity is stored in `storage_metadata.hebunMemoryCrudV1`, while physical PostgreSQL UUIDs remain internal canonical references.
+
+Only rows carrying the adapter-owned envelope participate in hydration, save, and clear. Canonical-only rows, metadata siblings, canonical kind, integer importance, agent ownership, provenance, lineage, trust, quality, retention, supersession, canonical lifecycle, health, and version remain unchanged. Invalid or duplicate owned rows reject hydration atomically, and foreign-key-protected reconciliation rolls back without snapshot replacement or notification.
+
+All nine Runtime Projection data snapshots, the Director Dashboard, Director AI, and Organizational Intelligence retain semantic parity. The complete suite passes 46/46 and the production build generates 192/192 pages.
+
+Phase 3C.5 is **COMPLETE WITH MINOR DEBT**. Tenant-level logical-ID uniqueness remains application-enforced, canonical kind and integer importance remain isolated, and ownership remains envelope-only. Memory remains authoritative and PostgreSQL remains passive; no automatic hydration, dual write, provider activation, runtime cutover, projection redesign, schema change, migration, or resolver was introduced.

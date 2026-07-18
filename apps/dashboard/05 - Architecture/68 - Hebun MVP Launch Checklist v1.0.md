@@ -268,3 +268,15 @@ Phase 3C.3 is **COMPLETE WITH MINOR DEBT**. Database-enforced logical-ID uniquen
 - [x] TypeScript, ESLint with zero errors, 44 regression tests, and the 192-page production build pass.
 
 Phase 3C.4 is **COMPLETE WITH MINOR DEBT**. Tenant-level Workflow logical-ID uniqueness remains application-enforced while PostgreSQL is passive. RLS, tenant provisioning, automatic hydration, dual write, provider activation, runtime cutover, backup, and recovery remain outside this foundation.
+
+### Phase 3C.5 PostgreSQL Memory Foundation — 2026-07-18
+
+- [x] `memories` has a lossless supported-row codec using the versioned `storage_metadata.hebunMemoryCrudV1` envelope and internal-only physical UUIDs.
+- [x] Adapter ownership excludes and preserves canonical-only Memory rows, metadata siblings, canonical kind, integer importance, ownership, provenance, lineage, trust, quality, lifecycle, health, and version.
+- [x] CRUD, deterministic hydration, adapter-owned save/clear reconciliation, immutable snapshots, and transaction commit/rollback isolation pass against a fresh database with all 11 migrations.
+- [x] Foreign-key and self-supersession-protected reconciliation rolls back atomically without snapshot replacement or notification.
+- [x] All nine Runtime Projection snapshots, Director Dashboard, Director AI, and Organizational Intelligence retain semantic parity.
+- [x] PostgreSQL diagnostics report `registries`, `knowledge-nodes`, `agents`, `workflows`, and `memories`; Memory remains active and PostgreSQL remains passive.
+- [x] TypeScript, ESLint with zero errors, 46 regression tests, and the 192-page production build pass.
+
+Phase 3C.5 is **COMPLETE WITH MINOR DEBT**. Tenant-level Memory logical-ID uniqueness remains application-enforced, canonical kind and integer importance remain isolated, and polymorphic ownership remains envelope-only. RLS, tenant provisioning, automatic hydration, dual write, provider activation, runtime cutover, backup, and recovery remain outside this foundation.

@@ -4,6 +4,7 @@ import type { HealthReporting } from "@/db/config/adapter-contract";
 import type { DatabaseHealth } from "@/db/config/connection-contract";
 import type { AgentCrudRecord } from "@/features/agent-crud/types";
 import type { KnowledgeNodeRecord } from "@/features/knowledge-crud/types";
+import type { MemoryCrudRecord } from "@/features/memory-crud/types";
 import type { RegistryCrudRecord } from "@/features/registry-crud/types";
 import type { WorkflowCrudRecord } from "@/features/workflow-crud/types";
 import type { PersistenceAdapter } from "./adapter";
@@ -24,6 +25,13 @@ import {
   type KnowledgeNodePostgresRow,
   type KnowledgeNodePostgresWriteRow,
 } from "./knowledge-node-postgres-codec";
+import {
+  decodeMemoryRow,
+  decodeMemoryRows,
+  encodeMemoryRecord,
+  type MemoryPostgresRow,
+  type MemoryPostgresWriteRow,
+} from "./memory-postgres-codec";
 import {
   PostgresPersistenceError,
   postgresPersistenceError,
@@ -57,9 +65,9 @@ const SUPPORTED_COLLECTIONS: readonly PersistenceCollection[] = [
   "knowledge-nodes",
   "agents",
   "workflows",
+  "memories",
 ];
 const KNOWN_UNSUPPORTED_COLLECTIONS: readonly PersistenceCollection[] = [
-  "memories",
   "knowledge-edges",
   "knowledge-relationships",
   "__provider_registry__",
@@ -101,6 +109,14 @@ const WORKFLOW_SELECT = `
    where tenant_id = $1
      and orchestration_metadata ? 'hebunWorkflowCrudV1'
    order by orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' asc nulls last,
+            id asc`;
+const MEMORY_SELECT = `
+  select id, tenant_id, content, storage_metadata, lifecycle_status,
+         created_at, updated_at
+    from memories
+   where tenant_id = $1
+     and storage_metadata ? 'hebunMemoryCrudV1'
+   order by storage_metadata->'hebunMemoryCrudV1'->>'logicalId' asc nulls last,
             id asc`;
 
 let operationSequence = 0;
@@ -369,7 +385,8 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
       | RegistryPostgresRow[]
       | KnowledgeNodePostgresRow[]
       | AgentPostgresRow[]
-      | WorkflowPostgresRow[],
+      | WorkflowPostgresRow[]
+      | MemoryPostgresRow[],
     tenantId: string,
   ): T[] {
     if (this.collection === "agents") {
@@ -384,6 +401,12 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     if (this.collection === "workflows") {
       return decodeWorkflowRows(
         rows as WorkflowPostgresRow[],
+        tenantId,
+      ) as unknown as T[];
+    }
+    if (this.collection === "memories") {
+      return decodeMemoryRows(
+        rows as MemoryPostgresRow[],
         tenantId,
       ) as unknown as T[];
     }
@@ -406,6 +429,12 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     }
     if (this.collection === "workflows") {
       const result = await client.query<WorkflowPostgresRow>(WORKFLOW_SELECT, [
+        tenantId,
+      ]);
+      return this.decodeRows(result.rows, tenantId);
+    }
+    if (this.collection === "memories") {
+      const result = await client.query<MemoryPostgresRow>(MEMORY_SELECT, [
         tenantId,
       ]);
       return this.decodeRows(result.rows, tenantId);
@@ -755,6 +784,76 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     return decodeWorkflowRow(result.rows[0], row.tenantId);
   }
 
+  private async insertMemoryRow(
+    client: PoolClient,
+    row: MemoryPostgresWriteRow,
+  ): Promise<MemoryCrudRecord> {
+    const existing = await this.findMemoryRowById(
+      client,
+      row.tenantId,
+      row.logicalId,
+    );
+    if (existing) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+        collection: this.collection,
+        operation: "create",
+        detail: `Memory "${row.logicalId}" already exists for the tenant.`,
+      });
+    }
+    const result = await client.query<MemoryPostgresRow>(
+      `insert into memories
+        (tenant_id, content, storage_metadata, lifecycle_status,
+         created_at, updated_at)
+       values ($1, $2, $3::jsonb, $4::lifecycle_status, $5, $6)
+       returning id, tenant_id, content, storage_metadata, lifecycle_status,
+                 created_at, updated_at`,
+      [
+        row.tenantId,
+        row.content,
+        JSON.stringify(row.storageMetadataPatch),
+        row.lifecycleStatus,
+        row.createdAt,
+        row.updatedAt,
+      ],
+    );
+    return decodeMemoryRow(result.rows[0]!, row.tenantId);
+  }
+
+  private async updateMemoryRow(
+    client: PoolClient,
+    row: MemoryPostgresWriteRow,
+    physicalId: string,
+  ): Promise<MemoryCrudRecord> {
+    const result = await client.query<MemoryPostgresRow>(
+      `update memories
+          set content = $3,
+              storage_metadata =
+                coalesce(storage_metadata, '{}'::jsonb) || $4::jsonb,
+              lifecycle_status = $5::lifecycle_status,
+              deleted_at = case
+                when $5::text = 'deleted' then coalesce(deleted_at, now())
+                else null
+              end,
+              updated_at = $6
+        where tenant_id = $1
+          and id = $2
+          and storage_metadata ? 'hebunMemoryCrudV1'
+        returning id, tenant_id, content, storage_metadata, lifecycle_status,
+                  created_at, updated_at`,
+      [
+        row.tenantId,
+        physicalId,
+        row.content,
+        JSON.stringify(row.storageMetadataPatch),
+        row.lifecycleStatus,
+        row.updatedAt,
+      ],
+    );
+    if (!result.rows[0]) throw this.notFound("update", row.logicalId);
+    return decodeMemoryRow(result.rows[0], row.tenantId);
+  }
+
   async load(context?: PersistenceContext): Promise<T[]> {
     const records = await this.runRead("load", context, (client, tenantId) =>
       this.readRows(client, tenantId),
@@ -767,6 +866,54 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async save(records: T[], context?: PersistenceContext): Promise<void> {
     await this.runMutation("save", context, async (client, tenantId) => {
+      if (this.collection === "memories") {
+        const encoded = records.map((record) =>
+          encodeMemoryRecord(record as unknown as MemoryCrudRecord, tenantId),
+        );
+        const ids = new Set<string>();
+        for (const row of encoded) {
+          if (ids.has(row.logicalId)) {
+            throw postgresPersistenceError({
+              code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+              collection: this.collection,
+              operation: "save",
+              detail: `Duplicate Memory logical id "${row.logicalId}" exists in the save input.`,
+            });
+          }
+          ids.add(row.logicalId);
+        }
+
+        await this.readRows(client, tenantId);
+        if (encoded.length === 0) {
+          await client.query(
+            `delete from memories
+              where tenant_id = $1
+                and storage_metadata ? 'hebunMemoryCrudV1'`,
+            [tenantId],
+          );
+        } else {
+          await client.query(
+            `delete from memories
+              where tenant_id = $1
+                and storage_metadata ? 'hebunMemoryCrudV1'
+                and not (
+                  storage_metadata->'hebunMemoryCrudV1'->>'logicalId' =
+                    any($2::text[])
+                )`,
+            [tenantId, encoded.map((row) => row.logicalId)],
+          );
+        }
+        for (const row of encoded) {
+          const existing = await this.findMemoryRowById(
+            client,
+            tenantId,
+            row.logicalId,
+          );
+          if (existing) await this.updateMemoryRow(client, row, existing.id);
+          else await this.insertMemoryRow(client, row);
+        }
+        return;
+      }
       if (this.collection === "workflows") {
         const encoded = records.map((record) =>
           encodeWorkflowRecord(
@@ -911,6 +1058,13 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async create(record: T, context?: PersistenceContext): Promise<T> {
     return this.runMutation("create", context, async (client, tenantId) => {
+      if (this.collection === "memories") {
+        const row = encodeMemoryRecord(
+          record as unknown as MemoryCrudRecord,
+          tenantId,
+        );
+        return (await this.insertMemoryRow(client, row)) as unknown as T;
+      }
       if (this.collection === "workflows") {
         const row = encodeWorkflowRecord(
           record as unknown as WorkflowCrudRecord,
@@ -946,6 +1100,24 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     context?: PersistenceContext,
   ): Promise<T | undefined> {
     return this.runMutation("update", context, async (client, tenantId) => {
+      if (this.collection === "memories") {
+        const current = await this.findMemoryRowById(client, tenantId, id);
+        if (!current) throw this.notFound("update", id);
+        const merged = {
+          ...decodeMemoryRow(current, tenantId),
+          ...(patch as Partial<MemoryCrudRecord>),
+          id,
+          updatedAt:
+            (patch as Partial<MemoryCrudRecord>).updatedAt ??
+            new Date().toISOString(),
+        } satisfies MemoryCrudRecord;
+        const row = encodeMemoryRecord(merged, tenantId);
+        return (await this.updateMemoryRow(
+          client,
+          row,
+          current.id,
+        )) as unknown as T;
+      }
       if (this.collection === "workflows") {
         const current = await this.findWorkflowRowById(client, tenantId, id);
         if (!current) throw this.notFound("update", id);
@@ -1044,6 +1216,27 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     context?: PersistenceContext,
   ): Promise<T> {
     return this.runMutation(operation, context, async (client, tenantId) => {
+      if (this.collection === "memories") {
+        const current = await this.findMemoryRowById(client, tenantId, id);
+        if (!current) throw this.notFound(operation, id);
+        const result = await client.query<MemoryPostgresRow>(
+          `update memories
+              set lifecycle_status = $3::lifecycle_status,
+                  deleted_at = case
+                    when $3::text = 'deleted' then now()
+                    else null
+                  end,
+                  updated_at = now()
+            where tenant_id = $1
+              and id = $2
+              and storage_metadata ? 'hebunMemoryCrudV1'
+            returning id, tenant_id, content, storage_metadata,
+                      lifecycle_status, created_at, updated_at`,
+          [tenantId, current.id, status],
+        );
+        if (!result.rows[0]) throw this.notFound(operation, id);
+        return decodeMemoryRow(result.rows[0], tenantId) as unknown as T;
+      }
       if (this.collection === "workflows") {
         const current = await this.findWorkflowRowById(client, tenantId, id);
         if (!current) throw this.notFound(operation, id);
@@ -1112,6 +1305,9 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async exists(id: string, context?: PersistenceContext): Promise<boolean> {
     return this.runRead("exists", context, async (client, tenantId) => {
+      if (this.collection === "memories") {
+        return Boolean(await this.findMemoryRowById(client, tenantId, id));
+      }
       if (this.collection === "workflows") {
         return Boolean(await this.findWorkflowRowById(client, tenantId, id));
       }
@@ -1165,6 +1361,16 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
 
   async clear(context?: PersistenceContext): Promise<void> {
     await this.runMutation("clear", context, async (client, tenantId) => {
+      if (this.collection === "memories") {
+        await this.readRows(client, tenantId);
+        await client.query(
+          `delete from memories
+            where tenant_id = $1
+              and storage_metadata ? 'hebunMemoryCrudV1'`,
+          [tenantId],
+        );
+        return;
+      }
       if (this.collection === "workflows") {
         await this.readRows(client, tenantId);
         await client.query(
@@ -1336,6 +1542,29 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
     return result.rows[0];
   }
 
+  private async findMemoryRowById(
+    client: PoolClient,
+    tenantId: string,
+    id: string,
+  ): Promise<MemoryPostgresRow | undefined> {
+    const result = await client.query<MemoryPostgresRow>(
+      `${MEMORY_SELECT.replace(
+        `order by storage_metadata->'hebunMemoryCrudV1'->>'logicalId' asc nulls last,
+            id asc`,
+        "",
+      )} and storage_metadata->'hebunMemoryCrudV1'->>'logicalId' = $2`,
+      [tenantId, id],
+    );
+    if (result.rows.length > 1) {
+      throw postgresPersistenceError({
+        code: "PERSISTENCE_LOGICAL_ID_CONFLICT",
+        collection: this.collection,
+        detail: `Duplicate Memory logical id "${id}" exists for the tenant.`,
+      });
+    }
+    return result.rows[0];
+  }
+
   private notFound(
     operation: PersistenceOperation,
     id: string,
@@ -1355,6 +1584,8 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
         client.query<{ relation: string | null }>(
           this.collection === "agents"
             ? "select to_regclass('public.agents')::text as relation"
+            : this.collection === "memories"
+              ? "select to_regclass('public.memories')::text as relation"
             : this.collection === "workflows"
               ? "select to_regclass('public.workflows')::text as relation"
             : this.collection === "knowledge-nodes"
@@ -1367,6 +1598,8 @@ export class SupabasePostgresAdapter<T extends PersistedEntity>
           result.rows[0]?.relation ===
           (this.collection === "agents"
             ? "agents"
+            : this.collection === "memories"
+              ? "memories"
             : this.collection === "workflows"
               ? "workflows"
             : this.collection === "knowledge-nodes"

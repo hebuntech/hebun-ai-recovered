@@ -200,3 +200,11 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - Adapter-owned rows are isolated by the versioned envelope. Canonical-only rows and canonical Mission, Goal, Plan, ownership, lifecycle, health, execution, rollback, and compensation fields remain untouched.
 - Invalid, unknown-version, or duplicate logical rows fail closed. Save and clear reconcile only adapter-owned rows, and inbound foreign-key failures roll back without replacing the previous immutable snapshot or notifying subscribers.
 - Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced tenant-level logical-ID uniqueness, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.
+
+### Phase 3C.5 PostgreSQL Memory Foundation — 2026-07-18
+
+- The passive PostgreSQL adapter now supports explicit tenant-scoped persistence for `memories` in addition to `registries`, `knowledge-nodes`, `agents`, and `workflows`.
+- Memory application IDs remain logical IDs in `storage_metadata.hebunMemoryCrudV1`; physical PostgreSQL UUIDs remain internal. Canonical `kind`, integer `importance`, and ownership remain isolated from the CRUD contract.
+- Adapter-owned rows are isolated by the versioned envelope. Canonical-only rows, metadata siblings, provenance, lineage, trust, quality, retention, supersession, canonical lifecycle, health, and version remain untouched.
+- Invalid, unknown-version, or duplicate logical rows fail closed. Save and clear reconcile only adapter-owned rows, and inbound or self-referential foreign-key failures roll back without snapshot replacement or notification.
+- Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced tenant-level logical-ID uniqueness, canonical ownership convergence, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.

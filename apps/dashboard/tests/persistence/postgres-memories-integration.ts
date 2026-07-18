@@ -1,17 +1,11 @@
 import assert from "node:assert/strict";
 import { Client } from "pg";
-import { createCanonicalReadServices } from "../../src/features/canonical-read";
 import { getDirectorDashboardSnapshot } from "../../src/features/director-dashboard/foundation";
 import { DirectorAIRuntime } from "../../src/features/director-ai-runtime";
-import {
-  runExecutionShadowRead,
-  type MemoryExecutionLineageSummary,
-} from "../../src/features/execution-shadow-read";
+import { getSnapshot as getMemorySnapshot } from "../../src/features/memory-crud/memory-adapter";
+import type { MemoryCrudRecord } from "../../src/features/memory-crud/types";
 import { OrganizationalIntelligenceEngine } from "../../src/features/organizational-intelligence";
-import {
-  activeProvider,
-  createRepository,
-} from "../../src/features/persistence";
+import { activeProvider, createRepository } from "../../src/features/persistence";
 import type { PostgresPersistenceError } from "../../src/features/persistence/postgres-errors";
 import { listRegisteredPersistenceProviders } from "../../src/features/persistence/provider-registry";
 import { createPostgresAdapter } from "../../src/features/persistence/supabase-postgres-adapter";
@@ -20,11 +14,9 @@ import {
   runtimeProjectionRegistry,
   type RuntimeProjectionCollection,
 } from "../../src/features/runtime-projection";
-import { getSnapshot as getWorkflowSnapshot } from "../../src/features/workflow-crud/workflow-adapter";
-import type { WorkflowCrudRecord } from "../../src/features/workflow-crud/types";
 import { createDisposablePostgresHarness } from "../helpers/disposable-postgres";
 
-const harness = createDisposablePostgresHarness("hebun_phase_3c4_verify");
+const harness = createDisposablePostgresHarness("hebun_phase_3c5_verify");
 const PROJECTION_COLLECTIONS: readonly RuntimeProjectionCollection[] = [
   "organization-runtime",
   "agent-runtime",
@@ -45,35 +37,27 @@ const VOLATILE_KEYS = new Set([
   "lastDurationMs",
 ]);
 
-function workflow(id: string, name = id): WorkflowCrudRecord {
+function memory(id: string, title = id): MemoryCrudRecord {
   return {
     id,
-    name,
-    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
-    description: `${name} governed workflow`,
-    department: "Marketing",
-    category: "Content",
-    owner: "Marketing Director",
-    status: "idle",
+    title,
+    slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+    description: `${title} governed memory content`,
+    memoryType: "Decision",
+    ownerType: "organization",
+    ownerId: "organization-hebun",
+    importance: "high",
+    confidence: 94,
+    source: "director-review",
+    tags: ["governed", "decision"],
+    summary: `${title} summary`,
+    status: "stable",
     version: "v1.0.0",
-    trigger: "manual",
-    steps: ["research", "draft", "review"],
-    assignedAgents: ["agent-content"],
-    dependencies: [],
-    approvalPolicy: "human-review",
-    executionMode: "sequential",
-    retryPolicy: "three-attempts",
-    timeout: 900,
-    runtime: "simulation",
-    createdAt: "2026-07-16T10:00:00.000Z",
-    updatedAt: "2026-07-16T10:00:00.000Z",
-    createdBy: "Seed",
-    updatedBy: "Seed",
+    createdAt: "2026-07-18T10:00:00.000Z",
+    updatedAt: "2026-07-18T10:00:00.000Z",
+    createdBy: "Director",
+    updatedBy: "Director",
     lifecycleStatus: "active",
-    ownerAgent: "agent-content",
-    successRate: 97.5,
-    runsToday: 3,
-    lastRun: "2026-07-16T09:55:00.000Z",
   };
 }
 
@@ -104,7 +88,7 @@ function semanticSnapshot<T>(value: T): unknown {
 
 async function main(): Promise<void> {
   ensureRuntimeProjectionRegistry();
-  const memoryBefore = getWorkflowSnapshot();
+  const memoryBefore = getMemorySnapshot();
   const projectionsBefore = projectionData();
   const dashboardBefore = semanticSnapshot(await getDirectorDashboardSnapshot());
   const directorBefore = semanticSnapshot(DirectorAIRuntime.getRuntimeSurface());
@@ -114,21 +98,21 @@ async function main(): Promise<void> {
 
   await harness.createDatabase();
   let adapter:
-    | ReturnType<typeof createPostgresAdapter<WorkflowCrudRecord>>
+    | ReturnType<typeof createPostgresAdapter<MemoryCrudRecord>>
     | undefined;
   const setup = new Client({ connectionString: harness.dbUrl });
   try {
     harness.migrateDatabase();
     await setup.connect();
     const object = await setup.query<{ relation: string | null }>(
-      "select to_regclass('public.workflows')::text as relation",
+      "select to_regclass('public.memories')::text as relation",
     );
-    assert.equal(object.rows[0]?.relation, "workflows");
+    assert.equal(object.rows[0]?.relation, "memories");
 
     const tenants = await setup.query<{ id: string }>(
       `insert into companies (name, slug)
-       values ('Workflow Tenant A', 'workflow-tenant-a'),
-              ('Workflow Tenant B', 'workflow-tenant-b')
+       values ('Memory Tenant A', 'memory-tenant-a'),
+              ('Memory Tenant B', 'memory-tenant-b')
        returning id`,
     );
     const tenantA = tenants.rows[0]!.id;
@@ -137,22 +121,22 @@ async function main(): Promise<void> {
     const contextB = { tenantId: tenantB };
     const env: NodeJS.ProcessEnv = {
       HEBUN_PERSISTENCE_POSTGRES_DATABASE_URL: harness.dbUrl,
-      HEBUN_CANONICAL_READ_DATABASE_URL: harness.dbUrl,
       NODE_ENV: "test",
     };
 
     const canonicalOnly = await setup.query<{ id: string }>(
-      `insert into workflows
-        (tenant_id, name, workflow_lifecycle_status, workflow_health,
-         workflow_execution_strategy, orchestration_metadata, workflow_version)
-       values ($1, 'Canonical Workflow', 'running', 'healthy', 'sequential',
-               '{"canonicalOnly":{"source":"execution-lineage"}}'::jsonb, 7)
+      `insert into memories
+        (tenant_id, content, kind, importance, storage_metadata,
+         memory_lifecycle_status, memory_health, memory_version)
+       values ($1, 'Canonical memory', 'semantic', 77,
+               '{"canonicalOnly":{"source":"long-term-memory"}}'::jsonb,
+               'active', 'trusted', 7)
        returning id`,
       [tenantA],
     );
 
-    adapter = createPostgresAdapter<WorkflowCrudRecord>({
-      collection: "workflows",
+    adapter = createPostgresAdapter<MemoryCrudRecord>({
+      collection: "memories",
       seed: () => [],
       env,
     });
@@ -165,12 +149,12 @@ async function main(): Promise<void> {
       "memories",
     ]);
 
-    const sample = workflow("workflow-content", "Content Workflow");
+    const sample = memory("memory-launch", "Launch Decision");
     const missingTenantOperations: Array<() => Promise<unknown>> = [
       () => adapter!.load(),
       () => adapter!.save([]),
       () => adapter!.create(sample),
-      () => adapter!.update(sample.id, { name: "Updated" }),
+      () => adapter!.update(sample.id, { title: "Updated" }),
       () => adapter!.delete(sample.id),
       () => adapter!.restore(sample.id),
       () => adapter!.archive(sample.id),
@@ -190,24 +174,30 @@ async function main(): Promise<void> {
     });
     assert.deepEqual(await adapter.load(contextA), []);
     assert.equal(notifications, 1);
-
     assert.deepEqual(await adapter.create(sample, contextA), sample);
     assert.equal(notifications, 2);
+
     const physical = await setup.query<{
       id: string;
-      orchestration_metadata: Record<string, unknown>;
+      agent_id: string | null;
+      kind: string;
+      importance: number;
+      storage_metadata: Record<string, unknown>;
     }>(
-      `select id, orchestration_metadata
-         from workflows
+      `select id, agent_id, kind, importance, storage_metadata
+         from memories
         where tenant_id = $1
-          and orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' = $2`,
+          and storage_metadata->'hebunMemoryCrudV1'->>'logicalId' = $2`,
       [tenantA, sample.id],
     );
     const physicalId = physical.rows[0]!.id;
     assert.notEqual(physicalId, sample.id);
+    assert.equal(physical.rows[0]!.agent_id, null);
+    assert.equal(physical.rows[0]!.kind, "episodic");
+    assert.equal(physical.rows[0]!.importance, 0);
     assert.equal(
       (
-        physical.rows[0]!.orchestration_metadata.hebunWorkflowCrudV1 as {
+        physical.rows[0]!.storage_metadata.hebunMemoryCrudV1 as {
           logicalId?: string;
         }
       ).logicalId,
@@ -218,73 +208,130 @@ async function main(): Promise<void> {
       () => adapter!.create(sample, contextA),
       "PERSISTENCE_LOGICAL_ID_CONFLICT",
     );
+    await expectCode(
+      () => adapter!.save([sample, sample], contextA),
+      "PERSISTENCE_LOGICAL_ID_CONFLICT",
+    );
     await adapter.create(sample, contextB);
-    await adapter.create(workflow("alpha-workflow", "Alpha Workflow"), contextA);
+    await adapter.create(memory("alpha-memory", "Alpha Memory"), contextA);
     assert.deepEqual(
       (await adapter.list(contextA)).map((item) => item.id),
-      ["alpha-workflow", "workflow-content"],
+      ["alpha-memory", "memory-launch"],
     );
     const repository = createRepository(adapter);
     assert.equal((await repository.findById(sample.id, contextA))?.id, sample.id);
     assert.equal(await adapter.exists(sample.id, contextA), true);
 
+    const department = await setup.query<{ id: string }>(
+      `insert into departments (tenant_id, name, slug)
+       values ($1, 'Memory', 'memory') returning id`,
+      [tenantA],
+    );
+    const agent = await setup.query<{ id: string }>(
+      `insert into agents (tenant_id, department_id, name)
+       values ($1, $2, 'Memory Steward') returning id`,
+      [tenantA, department.rows[0]!.id],
+    );
     await setup.query(
-      `update workflows
-          set orchestration_metadata = orchestration_metadata ||
-              '{"canonicalSibling":{"source":"preserved"}}'::jsonb,
-              workflow_lifecycle_status = 'running',
-              workflow_health = 'healthy',
-              workflow_execution_strategy = 'sequential',
-              execution_graph = '{"nodes":["start"]}'::jsonb,
-              rollback_strategy = '{"mode":"manual"}'::jsonb,
-              compensation_strategy = '{"mode":"review"}'::jsonb,
-              workflow_version = 4
+      `update memories
+          set agent_id = $2,
+              kind = 'procedural',
+              importance = 88,
+              source_command_id = '55555555-5555-4555-8555-555555555555',
+              scope = 'organizational',
+              namespace = 'director',
+              collection = 'decisions',
+              provenance = '{"source":"review"}'::jsonb,
+              lineage = '{"parent":"decision"}'::jsonb,
+              trust = '{"score":95}'::jsonb,
+              quality = '{"score":90}'::jsonb,
+              promotion_metadata = '{"state":"promoted"}'::jsonb,
+              retention_metadata = '{"policy":"retain"}'::jsonb,
+              aging_metadata = '{"age":1}'::jsonb,
+              correction_metadata = '{"corrected":false}'::jsonb,
+              supersession_metadata = '{"state":"current"}'::jsonb,
+              storage_metadata = storage_metadata ||
+                '{"canonicalSibling":{"source":"preserved"}}'::jsonb,
+              memory_lifecycle_status = 'active',
+              memory_health = 'trusted',
+              memory_version = 9
         where id = $1`,
-      [physicalId],
+      [physicalId, agent.rows[0]!.id],
     );
     const updated = await adapter.update(
       sample.id,
-      { status: "running", runsToday: 4, updatedBy: "Director" },
+      { status: "review", updatedBy: "Governance" },
       contextA,
     );
-    assert.equal(updated?.status, "running");
+    assert.equal(updated?.status, "review");
     const preserved = await setup.query<{
-      orchestration_metadata: { canonicalSibling?: { source?: string } };
-      workflow_lifecycle_status: string;
-      workflow_health: string;
-      workflow_execution_strategy: string;
-      execution_graph: { nodes?: string[] };
-      rollback_strategy: { mode?: string };
-      compensation_strategy: { mode?: string };
-      workflow_version: number;
-    }>(
-      `select orchestration_metadata, workflow_lifecycle_status, workflow_health,
-              workflow_execution_strategy, execution_graph, rollback_strategy,
-              compensation_strategy, workflow_version
-         from workflows where id = $1`,
-      [physicalId],
-    );
-    assert.equal(preserved.rows[0]!.orchestration_metadata.canonicalSibling?.source, "preserved");
-    assert.equal(preserved.rows[0]!.workflow_lifecycle_status, "running");
-    assert.equal(preserved.rows[0]!.workflow_health, "healthy");
-    assert.equal(preserved.rows[0]!.workflow_execution_strategy, "sequential");
-    assert.deepEqual(preserved.rows[0]!.execution_graph.nodes, ["start"]);
-    assert.equal(preserved.rows[0]!.rollback_strategy.mode, "manual");
-    assert.equal(preserved.rows[0]!.compensation_strategy.mode, "review");
-    assert.equal(preserved.rows[0]!.workflow_version, 4);
+      agent_id: string;
+      kind: string;
+      importance: number;
+      source_command_id: string;
+      scope: string;
+      namespace: string;
+      collection: string;
+      provenance: { source?: string };
+      lineage: { parent?: string };
+      trust: { score?: number };
+      quality: { score?: number };
+      promotion_metadata: { state?: string };
+      retention_metadata: { policy?: string };
+      aging_metadata: { age?: number };
+      correction_metadata: { corrected?: boolean };
+      supersession_metadata: { state?: string };
+      storage_metadata: { canonicalSibling?: { source?: string } };
+      memory_lifecycle_status: string;
+      memory_health: string;
+      memory_version: number;
+    }>("select * from memories where id = $1", [physicalId]);
+    const canonical = preserved.rows[0]!;
+    assert.equal(canonical.agent_id, agent.rows[0]!.id);
+    assert.equal(canonical.kind, "procedural");
+    assert.equal(canonical.importance, 88);
+    assert.equal(canonical.source_command_id, "55555555-5555-4555-8555-555555555555");
+    assert.equal(canonical.scope, "organizational");
+    assert.equal(canonical.namespace, "director");
+    assert.equal(canonical.collection, "decisions");
+    assert.equal(canonical.provenance.source, "review");
+    assert.equal(canonical.lineage.parent, "decision");
+    assert.equal(canonical.trust.score, 95);
+    assert.equal(canonical.quality.score, 90);
+    assert.equal(canonical.promotion_metadata.state, "promoted");
+    assert.equal(canonical.retention_metadata.policy, "retain");
+    assert.equal(canonical.aging_metadata.age, 1);
+    assert.equal(canonical.correction_metadata.corrected, false);
+    assert.equal(canonical.supersession_metadata.state, "current");
+    assert.equal(canonical.storage_metadata.canonicalSibling?.source, "preserved");
+    assert.equal(canonical.memory_lifecycle_status, "active");
+    assert.equal(canonical.memory_health, "trusted");
+    assert.equal(canonical.memory_version, 9);
 
     assert.equal((await adapter.archive(sample.id, contextA))?.lifecycleStatus, "archived");
     assert.equal((await adapter.restore(sample.id, contextA))?.lifecycleStatus, "active");
     assert.equal((await adapter.delete(sample.id, contextA))?.lifecycleStatus, "deleted");
+    const lifecycleIsolation = await setup.query<{
+      memory_lifecycle_status: string;
+      memory_health: string;
+      memory_version: number;
+    }>(
+      `select memory_lifecycle_status, memory_health, memory_version
+         from memories where id = $1`,
+      [physicalId],
+    );
+    assert.deepEqual(lifecycleIsolation.rows[0], {
+      memory_lifecycle_status: "active",
+      memory_health: "trusted",
+      memory_version: 9,
+    });
     assert.equal((await adapter.list(contextB))[0]?.lifecycleStatus, "active");
 
     const immutable = adapter.getSnapshot();
-    assert.throws(() => immutable[0]!.steps.push("mutated"));
-
+    assert.throws(() => immutable[0]!.tags.push("mutated"));
     const invalid = await setup.query<{ id: string }>(
-      `insert into workflows (tenant_id, name, description, orchestration_metadata)
-       values ($1, 'Invalid Workflow', 'Invalid',
-               '{"hebunWorkflowCrudV1":null}'::jsonb) returning id`,
+      `insert into memories (tenant_id, content, storage_metadata)
+       values ($1, 'Invalid', '{"hebunMemoryCrudV1":null}'::jsonb) returning id`,
       [tenantA],
     );
     const beforeInvalid = adapter.getSnapshot();
@@ -292,28 +339,26 @@ async function main(): Promise<void> {
     await expectCode(() => adapter!.load(contextA), "PERSISTENCE_INVALID_RECORD_MAPPING");
     assert.strictEqual(adapter.getSnapshot(), beforeInvalid);
     assert.equal(notifications, notificationsBeforeInvalid);
-    await setup.query("delete from workflows where id = $1", [invalid.rows[0]!.id]);
+    await setup.query("delete from memories where id = $1", [invalid.rows[0]!.id]);
 
     const duplicate = await setup.query<{ id: string }>(
-      `insert into workflows
-        (tenant_id, name, description, orchestration_metadata,
-         lifecycle_status, created_at, updated_at)
-       select tenant_id, name, description, orchestration_metadata,
-              lifecycle_status, created_at, updated_at
-         from workflows where id = $1 returning id`,
+      `insert into memories
+        (tenant_id, content, storage_metadata, lifecycle_status, created_at, updated_at)
+       select tenant_id, content, storage_metadata, lifecycle_status, created_at, updated_at
+         from memories where id = $1 returning id`,
       [physicalId],
     );
     await expectCode(() => adapter!.load(contextA), "PERSISTENCE_LOGICAL_ID_CONFLICT");
     assert.strictEqual(adapter.getSnapshot(), beforeInvalid);
     assert.equal(notifications, notificationsBeforeInvalid);
-    await setup.query("delete from workflows where id = $1", [duplicate.rows[0]!.id]);
+    await setup.query("delete from memories where id = $1", [duplicate.rows[0]!.id]);
 
     await adapter.load(contextA);
     const beforeCommit = adapter.getSnapshot();
     const notificationsBeforeCommit = notifications;
     await adapter.transaction(async (transactionAdapter) => {
-      await transactionAdapter.create(workflow("tx-one", "TX One"), contextA);
-      await transactionAdapter.create(workflow("tx-two", "TX Two"), contextA);
+      await transactionAdapter.create(memory("tx-one"), contextA);
+      await transactionAdapter.create(memory("tx-two"), contextA);
       assert.strictEqual(adapter!.getSnapshot(), beforeCommit);
       assert.equal(notifications, notificationsBeforeCommit);
     });
@@ -321,30 +366,23 @@ async function main(): Promise<void> {
     assert.equal(await adapter.exists("tx-one", contextA), true);
 
     await expectCode(
-      () =>
-        adapter!.transaction(async (transactionAdapter) => {
-          await transactionAdapter.create(workflow("cross-tenant"), contextA);
-          await transactionAdapter.create(workflow("cross-tenant"), contextB);
-        }),
+      () => adapter!.transaction(async (tx) => {
+        await tx.create(memory("cross-tenant"), contextA);
+        await tx.create(memory("cross-tenant"), contextB);
+      }),
       "PERSISTENCE_TENANT_MISMATCH",
     );
-    assert.equal(await adapter.exists("cross-tenant", contextA), false);
     await expectCode(
-      () =>
-        adapter!.transaction((transactionAdapter) =>
-          transactionAdapter.transaction(async () => undefined),
-        ),
+      () => adapter!.transaction((tx) => tx.transaction(async () => undefined)),
       "PERSISTENCE_OPERATION_UNSUPPORTED",
     );
-
     const beforeRollback = adapter.getSnapshot();
     const notificationsBeforeRollback = notifications;
     await expectCode(
-      () =>
-        adapter!.transaction(async (transactionAdapter) => {
-          await transactionAdapter.create(workflow("rollback"), contextA);
-          throw new Error("rollback requested");
-        }),
+      () => adapter!.transaction(async (tx) => {
+        await tx.create(memory("rollback"), contextA);
+        throw new Error("rollback requested");
+      }),
       "PERSISTENCE_TRANSACTION_FAILED",
     );
     assert.strictEqual(adapter.getSnapshot(), beforeRollback);
@@ -352,8 +390,10 @@ async function main(): Promise<void> {
     assert.equal(await adapter.exists("rollback", contextA), false);
 
     const guard = await setup.query<{ id: string }>(
-      `insert into tasks (tenant_id, workflow_id, title, status)
-       values ($1, $2, 'Workflow guard', 'pending') returning id`,
+      `insert into memories
+        (tenant_id, content, supersedes_memory_id, storage_metadata)
+       values ($1, 'Canonical child', $2, '{"canonicalOnly":{"guard":true}}'::jsonb)
+       returning id`,
       [tenantA, physicalId],
     );
     const beforeGuard = adapter.getSnapshot();
@@ -364,83 +404,56 @@ async function main(): Promise<void> {
     await expectCode(() => adapter!.clear(contextA), "PERSISTENCE_INVALID_RECORD_MAPPING");
     assert.strictEqual(adapter.getSnapshot(), beforeGuard);
     assert.equal(notifications, notificationsBeforeGuard);
-    await setup.query("delete from tasks where id = $1", [guard.rows[0]!.id]);
+    await setup.query("delete from memories where id = $1", [guard.rows[0]!.id]);
 
-    const saved = workflow("saved-workflow", "Saved Workflow");
-    await adapter.save([saved], contextA);
-    assert.deepEqual((await adapter.list(contextA)).map((item) => item.id), [saved.id]);
-    const canonicalCount = await setup.query<{ count: string }>(
-      "select count(*)::text as count from workflows where id = $1",
-      [canonicalOnly.rows[0]!.id],
-    );
-    assert.equal(canonicalCount.rows[0]?.count, "1");
-
-    const savedPhysical = await setup.query<{ id: string }>(
-      `select id from workflows
-        where tenant_id = $1
-          and orchestration_metadata->'hebunWorkflowCrudV1'->>'logicalId' = $2`,
-      [tenantA, saved.id],
-    );
-    const execution = await setup.query<{ id: string }>(
-      `insert into executions
-        (tenant_id, workflow_id, status, execution_lifecycle_status,
-         execution_health, execution_version)
-       values ($1, $2, 'running', 'executing', 'healthy', 1) returning id`,
-      [tenantA, savedPhysical.rows[0]!.id],
+    const parent = memory("superseded-parent");
+    const child = memory("superseding-child");
+    await adapter.save([parent, child], contextA);
+    const relation = await setup.query<{ parent_id: string; child_id: string }>(
+      `select p.id as parent_id, c.id as child_id
+         from memories p cross join memories c
+        where p.tenant_id = $1 and c.tenant_id = $1
+          and p.storage_metadata->'hebunMemoryCrudV1'->>'logicalId' = $2
+          and c.storage_metadata->'hebunMemoryCrudV1'->>'logicalId' = $3`,
+      [tenantA, parent.id, child.id],
     );
     await setup.query(
-      `update workflows
-          set workflow_lifecycle_status = 'running',
-              workflow_health = 'healthy',
-              workflow_version = 1
-        where id = $1`,
-      [savedPhysical.rows[0]!.id],
+      "update memories set supersedes_memory_id = $1 where id = $2",
+      [relation.rows[0]!.parent_id, relation.rows[0]!.child_id],
     );
-    const canonicalServices = createCanonicalReadServices({
-      connectionString: harness.dbUrl,
-      statementTimeoutMs: 2000,
-    });
-    try {
-      const lineage = await canonicalServices.getExecutionLineage({
-        tenantId: tenantA,
-        executionId: execution.rows[0]!.id,
-      });
-      assert.equal(lineage.status, "partial");
-      assert.equal(lineage.workflow?.id, savedPhysical.rows[0]!.id);
-      assert.equal(lineage.workflow?.label, saved.name);
+    const beforeSelfReference = adapter.getSnapshot();
+    const notificationsBeforeSelfReference = notifications;
+    await expectCode(
+      () => adapter!.save([child], contextA),
+      "PERSISTENCE_INVALID_RECORD_MAPPING",
+    );
+    assert.strictEqual(adapter.getSnapshot(), beforeSelfReference);
+    assert.equal(notifications, notificationsBeforeSelfReference);
+    await setup.query("update memories set supersedes_memory_id = null where id = $1", [
+      relation.rows[0]!.child_id,
+    ]);
 
-      const memorySummary: MemoryExecutionLineageSummary = {
-        source: "execution-session",
-        execution: { id: execution.rows[0]!.id, legacyStatus: "running" },
-        workflow: {
-          id: savedPhysical.rows[0]!.id,
-          label: saved.name,
-          version: "1",
-          lifecycleStatus: "running",
-        },
-        completeness: "partial",
-        warnings: [],
-      };
-      const shadow = await runExecutionShadowRead(
-        { tenantId: tenantA, executionId: execution.rows[0]!.id },
-        { canonicalReadServices: canonicalServices, memorySummary },
-      );
-      assert.notEqual(shadow.status, "unavailable");
-      assert.equal(shadow.postgres.summary?.workflow?.id, savedPhysical.rows[0]!.id);
-    } finally {
-      await canonicalServices.dispose();
-    }
-    await setup.query("delete from executions where id = $1", [execution.rows[0]!.id]);
+    const saved = memory("saved-memory", "Saved Memory");
+    await adapter.save([saved], contextA);
+    assert.deepEqual((await adapter.list(contextA)).map((item) => item.id), [saved.id]);
+    assert.equal(
+      (
+        await setup.query<{ count: string }>(
+          "select count(*)::text as count from memories where id = $1",
+          [canonicalOnly.rows[0]!.id],
+        )
+      ).rows[0]?.count,
+      "1",
+    );
 
     const tenantBCount = (await adapter.list(contextB)).length;
     await adapter.clear(contextA);
     assert.deepEqual(adapter.getSnapshot(), []);
-    assert.equal((await adapter.list(contextA)).length, 0);
     assert.equal((await adapter.list(contextB)).length, tenantBCount);
     assert.equal(
       (
         await setup.query<{ count: string }>(
-          "select count(*)::text as count from workflows where id = $1",
+          "select count(*)::text as count from memories where id = $1",
           [canonicalOnly.rows[0]!.id],
         )
       ).rows[0]?.count,
@@ -462,7 +475,7 @@ async function main(): Promise<void> {
     assert.equal(activeProvider(), "memory");
 
     runtimeProjectionRegistry.refreshAll();
-    assert.strictEqual(getWorkflowSnapshot(), memoryBefore);
+    assert.strictEqual(getMemorySnapshot(), memoryBefore);
     assert.deepEqual(projectionData(), projectionsBefore);
     assert.deepEqual(
       semanticSnapshot(await getDirectorDashboardSnapshot()),
@@ -498,7 +511,7 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log("postgres workflows conformance checks passed");
+  console.log("postgres memories conformance checks passed");
 }
 
 main().catch((error) => {
