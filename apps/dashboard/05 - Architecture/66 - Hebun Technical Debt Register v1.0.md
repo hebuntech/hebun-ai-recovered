@@ -208,3 +208,10 @@ It does not erase the debt register, but it converts the biggest remaining persi
 - Adapter-owned rows are isolated by the versioned envelope. Canonical-only rows, metadata siblings, provenance, lineage, trust, quality, retention, supersession, canonical lifecycle, health, and version remain untouched.
 - Invalid, unknown-version, or duplicate logical rows fail closed. Save and clear reconcile only adapter-owned rows, and inbound or self-referential foreign-key failures roll back without snapshot replacement or notification.
 - Memory remains active and authoritative. PostgreSQL remains passive. Database-enforced tenant-level logical-ID uniqueness, canonical ownership convergence, RLS, tenant provisioning, runtime hydration/cutover, backup, and recovery remain future work.
+
+### Phase 3D.2B.2 Additive Authentication Schema Foundation — 2026-07-18
+
+- Provider-neutral identity, invitation, server-side session-context, coarse role-permission, and authentication-audit lookup schema now exists as additive S12 infrastructure.
+- Authentication remains disabled. No `users.auth_id` backfill, canonical identity runtime read, session resolver, route guard, Supabase configuration, RLS, tenant provisioning, runtime hydration, or PostgreSQL activation exists.
+- Legacy identity duplication, membership eligibility, tenant lifecycle, permission assignment, and composite existing-data constraints remain gated by inventory and deterministic backfill.
+- The current Drizzle runner applies all pending migrations in one transaction; concurrent existing-table index operations require a separate approved operational path if production volume demands them.

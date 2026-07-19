@@ -20,6 +20,8 @@
 
 import {
   pgTable,
+  char,
+  check,
   boolean,
   index,
   integer,
@@ -27,7 +29,9 @@ import {
   text,
   timestamp,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { actorTypeEnum, auditResultEnum } from "./_enums";
 import { companies } from "./company";
 
@@ -64,6 +68,10 @@ export const auditLog = pgTable(
     /** True when produced under a non-live posture (no real effect occurred). */
     simulation: boolean("simulation").notNull().default(false),
     source: text("source"),
+    requestId: varchar("request_id", { length: 128 }),
+    sessionContextId: uuid("session_context_id"),
+    authoritySource: varchar("authority_source", { length: 64 }),
+    principalReferenceHash: char("principal_reference_hash", { length: 64 }),
 
     /** Record-format version (append-only; not an entity lifecycle version). */
     recordVersion: integer("record_version").notNull().default(1),
@@ -73,5 +81,21 @@ export const auditLog = pgTable(
     index("audit_log_entity_idx").on(t.entityType, t.entityId),
     index("audit_log_correlation_idx").on(t.correlationId),
     index("audit_log_actor_idx").on(t.actorType, t.actorId),
+    index("audit_log_request_idx").on(t.requestId),
+    index("audit_log_session_idx").on(t.sessionContextId),
+    index("audit_log_principal_idx").on(t.principalReferenceHash),
+    index("audit_log_tenant_action_time_idx").on(
+      t.tenantId,
+      t.action,
+      t.occurredAt,
+    ),
+    check(
+      "audit_log_principal_reference_hash_chk",
+      sql`${t.principalReferenceHash} is null or ${t.principalReferenceHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "audit_log_authority_source_chk",
+      sql`${t.authoritySource} is null or ${t.authoritySource} in ('membership', 'platform-admin', 'internal-service', 'system')`,
+    ),
   ],
 );

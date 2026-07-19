@@ -78,6 +78,13 @@
       "when": 1783802441624,
       "tag": "20260711204041_reasoning_learning_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784465160903,
+      "tag": "20260719124600_auth_identity_schema_foundation",
+      "breakpoints": true
     }
   ]
 }

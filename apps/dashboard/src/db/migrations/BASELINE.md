@@ -45,3 +45,12 @@ enums and `risk_class`, `voting_mode`, `rule_type`.
 FK → companies). The deferred `createdBy`/`updatedBy` actor FK is wired in **S2**,
 not P0 — leaving `_base.ts` untouched keeps every existing table backward
 compatible.
+
+## Current chain extension (S12, 2026-07-18)
+
+`20260719124600_auth_identity_schema_foundation.sql` extends the historical S0
+baseline additively. The chain now contains 12 migrations. S12 adds four inert
+authentication enums, `auth_identities`, `invitations`, `user_session_contexts`,
+and `role_permissions`, plus nullable membership, company, and audit lookup
+fields. It performs no backfill, authentication activation, provider setup, RLS,
+tenant provisioning, runtime hydration, or storage-provider change.

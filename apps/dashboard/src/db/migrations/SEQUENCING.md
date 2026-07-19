@@ -1,4 +1,4 @@
-# Migration Sequencing (S0–S11)
+# Migration Sequencing (S0–S12)
 
 Derived from `05 - Architecture/51 - Architecture-to-Code Gap Analysis v1.0.md` §9.
 Each stage is a **small, reversible** migration with its own validation. **Never
@@ -20,6 +20,7 @@ feature before its replacement is validated.
 | **S9 ✅ DONE** | Working Memory / Long-term Memory foundation | S6, S7, S8 | +`working_memories`; extend `memories`(+canonical long-term metadata, lifecycle/health, self-supersession, versioning) | none (additive only) | drop new table + added cols | ✅ generated offline; 1 CREATE TABLE + 16 ADD COLUMN + 5 idx + 3 FK; 0 DROP; `memories.kind` preserved; knowledge graph untouched; retrieval/promotion runtime deferred | Med |
 | **S10 ✅ DONE** | Knowledge reconciliation foundation | S9 | extend `knowledge_nodes`(+governed truth metadata, stewardship, ratification refs, review/freshness, version/supersession); extend `knowledge_edges`(+governed relationship metadata); +`knowledge_facts` identity/active-selection support table only | none (additive dual-shape) | drop added cols + support table | ✅ generated offline; 1 CREATE TABLE + additive node/edge cols + indexes/FKs; 0 DROP; `knowledge_nodes` remains canonical content store; `knowledge_edges` remains canonical relationship store; no duplicated content in `knowledge_facts`; runtime resolution deferred | High |
 | **S11 ✅ DONE** | Reasoning / Learning foundation | S10 | extend `reasoning_traces`(+lineage,+lifecycle/health,+Knowledge/Memory/Policy refs,+evidence/conflict/uncertainty summaries,+verification/provider metadata); +`learning_sessions`; +`improvement_proposals` | none (additive only) | drop new tables + added reasoning cols | ✅ generated offline; 2 CREATE TABLE + additive reasoning cols + indexes/FKs; 0 DROP; `reasoning_traces` retained; raw hidden chain-of-thought explicitly excluded; Learning remains proposal-only; runtime activation deferred | High |
+| **S12 ✅ DONE** | Additive authentication schema foundation | S5, S11 | +`auth_identities`, +`invitations`, +`user_session_contexts`, +`role_permissions`; nullable membership/company/audit extensions | none; legacy inventory and backfill deferred | keep schema inert or forward-fix after security writes | ✅ full 12-migration disposable PostgreSQL chain, second-run no-op, schema/constraint/FK checks, cleanup; authentication disabled | Med |
 
 ## Notes
 
@@ -34,3 +35,6 @@ feature before its replacement is validated.
   dual-shape / dual-model windows.
 - **Circular Policy↔Governance**: bootstrap linearly — Identity → Policy schema →
   Governance engine → wire Policy ratification through Governance.
+- **S12 activation boundary**: schema existence grants no authority. Legacy identity
+  inventory/backfill, restrictive constraints, provider integration, session
+  resolution, RLS, tenant isolation, and runtime activation remain separate gates.

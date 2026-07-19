@@ -12,6 +12,7 @@ export const users = pgTable(
   "users",
   {
     ...rootColumns,
+    /** Temporary compatibility debt; canonical identities live in auth_identities. */
     authId: text("auth_id"),
     email: text("email").notNull(),
     name: text("name"),

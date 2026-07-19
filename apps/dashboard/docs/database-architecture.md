@@ -397,3 +397,20 @@ Zero application rewrite — the adapter contract is the seam.
 
 _No code, migrations, installs, or behavior changed in this phase. This document is
 the blueprint for the Supabase Postgres + Drizzle implementation._
+
+---
+
+## 18. Additive authentication schema foundation (S12)
+
+S12 adds provider-neutral identity, invitation, server-side session-context, and
+coarse role-permission storage. Existing company and membership rows receive only
+nullable lifecycle/eligibility fields; no legacy identity or status backfill has
+run. Authentication remains disabled and no session resolver or canonical identity
+runtime read exists.
+
+The migration intentionally does not configure Supabase Auth, enable RLS, provision
+tenants, activate PostgreSQL, hydrate Runtime Projection, or change Dashboard,
+Director AI, or Organizational Intelligence behavior. Restrictive constraints on
+existing identity/membership data remain gated by inventory and deterministic
+backfill. Security rollback is forward-fix after the first production identity or
+session record is used for access.

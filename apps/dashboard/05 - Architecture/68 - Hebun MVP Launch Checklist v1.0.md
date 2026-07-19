@@ -280,3 +280,14 @@ Phase 3C.4 is **COMPLETE WITH MINOR DEBT**. Tenant-level Workflow logical-ID uni
 - [x] TypeScript, ESLint with zero errors, 46 regression tests, and the 192-page production build pass.
 
 Phase 3C.5 is **COMPLETE WITH MINOR DEBT**. Tenant-level Memory logical-ID uniqueness remains application-enforced, canonical kind and integer importance remain isolated, and polymorphic ownership remains envelope-only. RLS, tenant provisioning, automatic hydration, dual write, provider activation, runtime cutover, backup, and recovery remain outside this foundation.
+
+### Phase 3D.2B.2 Additive Authentication Schema Foundation — 2026-07-18
+
+- [x] Four provider-neutral authentication enums and four additive security/authorization tables are represented in the Drizzle schema and S12 migration.
+- [x] Existing users remain compatible; `users.auth_id` is unchanged and explicitly transitional.
+- [x] Membership, company, and audit extensions are nullable and contain no legacy-data backfill or authority-enabling defaults.
+- [x] The complete 12-migration chain, second-run no-op, new-table constraints, tenant-safe new-table relationships, old-shape inserts, and disposable database cleanup are verified.
+- [x] Memory remains authoritative and PostgreSQL remains passive; Runtime Projection and executive surfaces are unchanged.
+- [ ] Legacy identity and membership inventory/backfill, restrictive constraints, permission seeds, Supabase integration, session/TenantContext resolvers, route protection, RLS, tenant provisioning, and authentication activation remain required.
+
+Phase 3D.2B.2 establishes schema only. It does not make Hebun authentication-ready or unblock PostgreSQL activation by itself.

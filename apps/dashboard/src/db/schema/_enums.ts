@@ -161,6 +161,38 @@ export const notificationStatusEnum = pgEnum("notification_status", [
   "archived",
 ]);
 
+/* Authentication foundation enums. Schema-only until the authentication
+ * runtime is introduced; none of these values grants authority by itself. */
+export const authIdentityStatusEnum = pgEnum("auth_identity_status", [
+  "pending",
+  "active",
+  "suspended",
+  "revoked",
+]);
+
+export const membershipStatusEnum = pgEnum("membership_status", [
+  "pending",
+  "active",
+  "suspended",
+  "revoked",
+  "expired",
+]);
+
+export const tenantStatusEnum = pgEnum("tenant_status", [
+  "provisioning",
+  "active",
+  "suspended",
+  "deleting",
+  "deleted",
+]);
+
+export const invitationStatusEnum = pgEnum("invitation_status", [
+  "pending",
+  "accepted",
+  "expired",
+  "revoked",
+]);
+
 /* ══════════════════════════════════════════════════════════════════════════
  * TIER 2 — CANONICAL GOVERNED ENUMS (Specs 35–50) — INERT in this phase.
  * Defined here so the catalog is complete and typecheck-stable; NOT wired into
