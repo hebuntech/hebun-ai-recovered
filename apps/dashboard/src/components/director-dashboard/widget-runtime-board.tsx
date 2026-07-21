@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,9 @@ import {
   type WidgetRuntimeState,
 } from "@/features/director-dashboard-widget-runtime";
 import type { DashboardSnapshot } from "@/features/director-dashboard-data";
+import { DASHBOARD_SCOPE as dashboardScope } from "@/features/director-dashboard-ui/scope";
+import { scheduleFrame } from "@/lib/frame-scheduler";
 
-const dashboardScope = Object.freeze({ kind: "platform" as const, authority: "hebun-dashboard", resolvedBy: "server" as const });
 const widgetOrder: readonly DashboardWidgetId[] = [
   "runtime-overview", "active-agents", "active-workflows", "monitoring-summary",
   "health-summary", "diagnostics-summary", "evaluation-summary", "authentication-summary",
@@ -85,6 +86,15 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   const [overview, setOverview] = useState(initialOverview);
   const [insights, setInsights] = useState(initialInsights);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | undefined>(initialSnapshot);
+  // Monotonic token: only the most recent refresh may publish its result, so a
+  // superseded refresh can never overwrite newer state with a stale snapshot.
+  const refreshToken = useRef(0);
+
+  /*
+   * One immutable runtime snapshot fans out to every layer in a single commit:
+   * widgets, then the overview derived from it, then the insights derived from
+   * that overview. No layer can observe a different snapshot.
+   */
   const applyRuntime = (next: WidgetRuntimeSnapshot) => {
     const nextOverview = createExecutiveOverview({ runtime: next, evaluatedAt: new Date() });
     setRuntime(next);
@@ -92,17 +102,22 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
     setInsights(createExecutiveInsights(nextOverview));
   };
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
+    const token = (refreshToken.current += 1);
+    return scheduleFrame(() => {
+      if (refreshToken.current !== token) return;
       setSnapshot(initialSnapshot);
       applyRuntime(initialSnapshot
         ? engine.switchSnapshot({ snapshot: initialSnapshot, authorityScope: dashboardScope })
         : engine.manualRefresh({ authorityScope: dashboardScope }));
     });
-    return () => cancelAnimationFrame(frame);
   }, [engine, initialSnapshot]);
   const refresh = () => {
+    const token = (refreshToken.current += 1);
     applyRuntime(engine.beginRefresh());
-    requestAnimationFrame(() => applyRuntime(engine.manualRefresh({ snapshot, authorityScope: dashboardScope })));
+    scheduleFrame(() => {
+      if (refreshToken.current !== token) return;
+      applyRuntime(engine.manualRefresh({ snapshot, authorityScope: dashboardScope }));
+    });
   };
   return (
     <div className="space-y-6">

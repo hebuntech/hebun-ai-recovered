@@ -29,12 +29,7 @@ import {
   runtimeProjectionRegistry,
 } from "../runtime-projection";
 import type { WorkflowRuntimeModel } from "../workflow-runtime";
-
-const dashboardScope = Object.freeze({
-  kind: "platform" as const,
-  authority: "hebun-dashboard",
-  resolvedBy: "server" as const,
-});
+import { DASHBOARD_SCOPE as dashboardScope } from "./scope";
 
 function dashboardRegistry(): DashboardRegistry {
   return new DashboardRegistry(DASHBOARD_SECTION_IDS.map((sectionId) => ({
