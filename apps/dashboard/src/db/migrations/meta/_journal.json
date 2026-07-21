@@ -85,6 +85,13 @@
       "when": 1784465160903,
       "tag": "20260719124600_auth_identity_schema_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784619772611,
+      "tag": "20260721074252_auth_session_digest_version",
+      "breakpoints": true
     }
   ]
 }

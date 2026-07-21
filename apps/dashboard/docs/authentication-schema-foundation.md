@@ -10,7 +10,9 @@ configured and authentication remains disabled.
 - Provider tokens, raw JWTs, cookies, raw provider-session identifiers, and
   plaintext invitation tokens have no schema columns.
 - Invitation and provider-session references are represented by versioned HMAC
-  digests at the future application boundary.
+  digests at the application boundary. Session contexts persist the positive key
+  version used for each digest so controlled current/previous-key rotation does
+  not require retaining an unbounded secret history.
 - Security-history relationships use restrictive deletion; audit session lookup
   intentionally has no FK so retained audit events cannot be deleted transitively.
 - Existing tenant and membership state remains non-authoritative until inventory,

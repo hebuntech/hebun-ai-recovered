@@ -43,13 +43,13 @@ try {
     const migrationCount = await client.query<{ count: string }>(
       "select count(*)::text as count from drizzle.__drizzle_migrations",
     );
-    assert.equal(migrationCount.rows[0]?.count, "12");
+    assert.equal(migrationCount.rows[0]?.count, "13");
 
     harness.migrateDatabase();
     const rerunCount = await client.query<{ count: string }>(
       "select count(*)::text as count from drizzle.__drizzle_migrations",
     );
-    assert.equal(rerunCount.rows[0]?.count, "12");
+    assert.equal(rerunCount.rows[0]?.count, "13");
 
     const enumRows = await client.query<{ typname: string; labels: string[] }>(`
       select t.typname, json_agg(e.enumlabel order by e.enumsortorder) as labels
@@ -97,7 +97,8 @@ try {
            ('audit_log', 'request_id'),
            ('auth_identities', 'status'),
            ('invitations', 'status'),
-           ('user_session_contexts', 'session_version')
+           ('user_session_contexts', 'session_version'),
+           ('user_session_contexts', 'provider_session_reference_digest_version')
          )
     `);
     const columns = new Map(
@@ -115,6 +116,10 @@ try {
     assert.match(columns.get("auth_identities.status")?.column_default ?? "", /pending/);
     assert.match(columns.get("invitations.status")?.column_default ?? "", /pending/);
     assert.match(columns.get("user_session_contexts.session_version")?.column_default ?? "", /1/);
+    assert.equal(
+      columns.get("user_session_contexts.provider_session_reference_digest_version")?.is_nullable,
+      "NO",
+    );
 
     const forbiddenColumns = await client.query<{ column_name: string }>(`
       select column_name from information_schema.columns
@@ -281,12 +286,19 @@ try {
       [TENANT_A, ROLE_A, ORG_A, USER_A, "7".repeat(64)],
     );
 
-    const sessionColumns = `auth_identity_id, provider_session_reference_hash, user_id,
+    const sessionColumns = `auth_identity_id, provider_session_reference_hash,
+      provider_session_reference_digest_version, user_id,
       assurance_level, mfa_verified, authenticated_at, issued_at, last_activity_at,
       absolute_expires_at, inactivity_expires_at`;
     await client.query(
       `insert into user_session_contexts (${sessionColumns})
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
+               now() + interval '24 hours', now() + interval '8 hours')`,
+      [IDENTITY_A, "e".repeat(64), USER_A],
+    );
+    await client.query(
+      `insert into user_session_contexts (${sessionColumns})
+       values ($1, $2, 1, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours')`,
       [IDENTITY_A, "e".repeat(64), USER_A],
     );
@@ -294,7 +306,7 @@ try {
       client,
       "23505",
       `insert into user_session_contexts (${sessionColumns})
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours')`,
       [IDENTITY_A, "e".repeat(64), USER_A],
     );
@@ -302,7 +314,7 @@ try {
       client,
       "23514",
       `insert into user_session_contexts (${sessionColumns})
-       values ($1, $2, $3, 'aal1', true, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', true, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours')`,
       [IDENTITY_A, "f".repeat(64), USER_A],
     );
@@ -310,7 +322,7 @@ try {
       client,
       "23514",
       `insert into user_session_contexts (${sessionColumns})
-       values ($1, $2, $3, 'aal1', false, now() + interval '1 hour', now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now() + interval '1 hour', now(), now(),
                now() + interval '24 hours', now() + interval '8 hours')`,
       [IDENTITY_A, "1".repeat(64), USER_A],
     );
@@ -319,7 +331,7 @@ try {
       "23514",
       `insert into user_session_contexts
         (${sessionColumns}, active_tenant_id)
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours', $4)`,
       [IDENTITY_A, "2".repeat(64), USER_A, TENANT_A],
     );
@@ -328,7 +340,7 @@ try {
       "23503",
       `insert into user_session_contexts
         (${sessionColumns}, active_tenant_id, active_membership_id, membership_version)
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours', $4, $5, 1)`,
       [IDENTITY_A, "3".repeat(64), USER_A, TENANT_B, MEMBERSHIP_A],
     );
@@ -336,7 +348,7 @@ try {
       client,
       "23514",
       `insert into user_session_contexts (${sessionColumns})
-       values ($1, 'not-a-hash', $2, 'aal1', false, now(), now(), now(),
+       values ($1, 'not-a-hash', 2, $2, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours')`,
       [IDENTITY_A, USER_A],
     );
@@ -345,7 +357,7 @@ try {
       "23514",
       `insert into user_session_contexts
         (${sessionColumns}, active_tenant_id, active_membership_id)
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours', $4, $5)`,
       [IDENTITY_A, "8".repeat(64), USER_A, TENANT_A, MEMBERSHIP_A],
     );
@@ -354,7 +366,7 @@ try {
       "23514",
       `insert into user_session_contexts
         (${sessionColumns}, active_tenant_id, active_membership_id, membership_version)
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours', $4, $5, 0)`,
       [IDENTITY_A, "9".repeat(64), USER_A, TENANT_A, MEMBERSHIP_A],
     );
@@ -362,7 +374,7 @@ try {
       client,
       "23514",
       `insert into user_session_contexts (${sessionColumns}, revoked_at)
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours', now())`,
       [IDENTITY_A, "a".repeat(64), USER_A],
     );
@@ -370,9 +382,17 @@ try {
       client,
       "23514",
       `insert into user_session_contexts (${sessionColumns}, revocation_reason)
-       values ($1, $2, $3, 'aal1', false, now(), now(), now(),
+       values ($1, $2, 2, $3, 'aal1', false, now(), now(), now(),
                now() + interval '24 hours', now() + interval '8 hours', 'logout')`,
       [IDENTITY_A, "b".repeat(64), USER_A],
+    );
+    await expectPgError(
+      client,
+      "23514",
+      `insert into user_session_contexts (${sessionColumns})
+       values ($1, $2, 0, $3, 'aal1', false, now(), now(), now(),
+               now() + interval '24 hours', now() + interval '8 hours')`,
+      [IDENTITY_A, "c".repeat(64), USER_A],
     );
 
     await client.query(

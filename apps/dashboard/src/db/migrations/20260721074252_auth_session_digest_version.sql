@@ -1,0 +1,4 @@
+DROP INDEX "user_session_contexts_provider_session_hash_uq";--> statement-breakpoint
+ALTER TABLE "user_session_contexts" ADD COLUMN "provider_session_reference_digest_version" integer NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "user_session_contexts_provider_session_digest_uq" ON "user_session_contexts" USING btree ("provider_session_reference_digest_version","provider_session_reference_hash");--> statement-breakpoint
+ALTER TABLE "user_session_contexts" ADD CONSTRAINT "user_session_contexts_reference_digest_version_chk" CHECK ("user_session_contexts"."provider_session_reference_digest_version" > 0);

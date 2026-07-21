@@ -30,6 +30,9 @@ export const userSessionContexts = pgTable(
     providerSessionReferenceHash: char("provider_session_reference_hash", {
       length: 64,
     }).notNull(),
+    providerSessionReferenceDigestVersion: integer(
+      "provider_session_reference_digest_version",
+    ).notNull(),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -53,7 +56,8 @@ export const userSessionContexts = pgTable(
     revocationReason: varchar("revocation_reason", { length: 64 }),
   },
   (t) => [
-    uniqueIndex("user_session_contexts_provider_session_hash_uq").on(
+    uniqueIndex("user_session_contexts_provider_session_digest_uq").on(
+      t.providerSessionReferenceDigestVersion,
       t.providerSessionReferenceHash,
     ),
     index("user_session_contexts_user_active_idx")
@@ -73,6 +77,10 @@ export const userSessionContexts = pgTable(
     check(
       "user_session_contexts_reference_hash_chk",
       sql`${t.providerSessionReferenceHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "user_session_contexts_reference_digest_version_chk",
+      sql`${t.providerSessionReferenceDigestVersion} > 0`,
     ),
     check(
       "user_session_contexts_assurance_level_chk",
