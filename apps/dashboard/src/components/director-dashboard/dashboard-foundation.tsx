@@ -35,6 +35,7 @@ export function DashboardFoundation({ snapshot, widgetRuntime }: DashboardFounda
           initialSnapshot={widgetRuntime.snapshot}
           initialRuntime={widgetRuntime.widgets}
           initialOverview={widgetRuntime.overview}
+          initialInsights={widgetRuntime.insights}
         />
       </>
     );

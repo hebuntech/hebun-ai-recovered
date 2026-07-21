@@ -7,6 +7,10 @@ import {
   type DashboardSnapshot,
 } from "../director-dashboard-data";
 import {
+  createExecutiveInsights,
+  type ExecutiveInsight,
+} from "../director-dashboard-executive-insights";
+import {
   createExecutiveOverview,
   type ExecutiveOverview,
 } from "../director-dashboard-executive-overview";
@@ -43,12 +47,14 @@ export interface DirectorDashboardUiModel {
   readonly snapshot?: DashboardSnapshot;
   readonly widgets: WidgetRuntimeSnapshot;
   readonly overview: ExecutiveOverview;
+  readonly insights: readonly ExecutiveInsight[];
 }
 
 function unavailableDashboard(): DirectorDashboardUiModel {
   const engine = new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0");
   const widgets = engine.manualRefresh({ authorityScope: dashboardScope });
-  return Object.freeze({ widgets, overview: createExecutiveOverview({ runtime: widgets, evaluatedAt: new Date() }) });
+  const overview = createExecutiveOverview({ runtime: widgets, evaluatedAt: new Date() });
+  return Object.freeze({ widgets, overview, insights: createExecutiveInsights(overview) });
 }
 
 export function getDirectorDashboardUiModel(): DirectorDashboardUiModel {
@@ -74,10 +80,12 @@ export function getDirectorDashboardUiModel(): DirectorDashboardUiModel {
     if (aggregation.status !== "success") return unavailableDashboard();
     const engine = new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0");
     const widgets = engine.manualRefresh({ snapshot: aggregation.snapshot, authorityScope: dashboardScope });
+    const overview = createExecutiveOverview({ runtime: widgets, evaluatedAt: new Date() });
     return Object.freeze({
       snapshot: aggregation.snapshot,
       widgets,
-      overview: createExecutiveOverview({ runtime: widgets, evaluatedAt: new Date() }),
+      overview,
+      insights: createExecutiveInsights(overview),
     });
   } catch {
     return unavailableDashboard();

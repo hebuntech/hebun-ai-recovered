@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionShell } from "@/components/director-dashboard/section-shell";
 import { ExecutiveOverviewSection } from "@/components/director-dashboard/executive-overview-section";
+import { ExecutiveInsightsSection } from "@/components/director-dashboard/executive-insights-section";
+import {
+  createExecutiveInsights,
+  type ExecutiveInsight,
+} from "@/features/director-dashboard-executive-insights";
 import {
   createExecutiveOverview,
   type ExecutiveOverview,
@@ -69,18 +74,22 @@ export function WidgetRuntimeCard({ state }: { readonly state: WidgetRuntimeStat
   );
 }
 
-export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOverview }: {
+export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOverview, initialInsights }: {
   readonly initialSnapshot?: DashboardSnapshot;
   readonly initialRuntime: WidgetRuntimeSnapshot;
   readonly initialOverview: ExecutiveOverview;
+  readonly initialInsights: readonly ExecutiveInsight[];
 }) {
   const [engine] = useState(() => new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0"));
   const [runtime, setRuntime] = useState(initialRuntime);
   const [overview, setOverview] = useState(initialOverview);
+  const [insights, setInsights] = useState(initialInsights);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | undefined>(initialSnapshot);
   const applyRuntime = (next: WidgetRuntimeSnapshot) => {
+    const nextOverview = createExecutiveOverview({ runtime: next, evaluatedAt: new Date() });
     setRuntime(next);
-    setOverview(createExecutiveOverview({ runtime: next, evaluatedAt: new Date() }));
+    setOverview(nextOverview);
+    setInsights(createExecutiveInsights(nextOverview));
   };
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -98,6 +107,7 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   return (
     <div className="space-y-6">
       <ExecutiveOverviewSection overview={overview} />
+      <ExecutiveInsightsSection insights={insights} />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2 text-sm text-fg-secondary">
           <Badge variant={snapshot ? "success" : "warning"}>{snapshot ? "Snapshot Ready" : "Snapshot Unavailable"}</Badge>
