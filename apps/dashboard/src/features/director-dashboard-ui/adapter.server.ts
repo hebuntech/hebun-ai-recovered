@@ -7,6 +7,10 @@ import {
   type DashboardSnapshot,
 } from "../director-dashboard-data";
 import {
+  createExecutiveOverview,
+  type ExecutiveOverview,
+} from "../director-dashboard-executive-overview";
+import {
   createDefaultWidgetRegistry,
   WidgetRefreshEngine,
   type WidgetRuntimeSnapshot,
@@ -38,11 +42,13 @@ function dashboardRegistry(): DashboardRegistry {
 export interface DirectorDashboardUiModel {
   readonly snapshot?: DashboardSnapshot;
   readonly widgets: WidgetRuntimeSnapshot;
+  readonly overview: ExecutiveOverview;
 }
 
 function unavailableDashboard(): DirectorDashboardUiModel {
   const engine = new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0");
-  return Object.freeze({ widgets: engine.manualRefresh({ authorityScope: dashboardScope }) });
+  const widgets = engine.manualRefresh({ authorityScope: dashboardScope });
+  return Object.freeze({ widgets, overview: createExecutiveOverview({ runtime: widgets, evaluatedAt: new Date() }) });
 }
 
 export function getDirectorDashboardUiModel(): DirectorDashboardUiModel {
@@ -67,9 +73,11 @@ export function getDirectorDashboardUiModel(): DirectorDashboardUiModel {
     });
     if (aggregation.status !== "success") return unavailableDashboard();
     const engine = new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0");
+    const widgets = engine.manualRefresh({ snapshot: aggregation.snapshot, authorityScope: dashboardScope });
     return Object.freeze({
       snapshot: aggregation.snapshot,
-      widgets: engine.manualRefresh({ snapshot: aggregation.snapshot, authorityScope: dashboardScope }),
+      widgets,
+      overview: createExecutiveOverview({ runtime: widgets, evaluatedAt: new Date() }),
     });
   } catch {
     return unavailableDashboard();

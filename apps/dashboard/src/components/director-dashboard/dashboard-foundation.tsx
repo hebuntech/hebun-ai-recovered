@@ -31,7 +31,11 @@ export function DashboardFoundation({ snapshot, widgetRuntime }: DashboardFounda
           title="Director Dashboard"
           context="The operational control center of the company. Every widget reads the current immutable dashboard snapshot."
         />
-        <WidgetRuntimeBoard initialSnapshot={widgetRuntime.snapshot} initialRuntime={widgetRuntime.widgets} />
+        <WidgetRuntimeBoard
+          initialSnapshot={widgetRuntime.snapshot}
+          initialRuntime={widgetRuntime.widgets}
+          initialOverview={widgetRuntime.overview}
+        />
       </>
     );
   }
