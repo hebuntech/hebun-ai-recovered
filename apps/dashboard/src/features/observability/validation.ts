@@ -25,7 +25,7 @@ const allowedMetadataKeys = new Set<keyof CanonicalSignalMetadata>([
   "dataClassification",
 ]);
 
-const forbiddenKey = /access.?token|refresh.?token|jwt|password|cookie|authorization|raw.?response|raw.?request|hidden.?reason|chain.?of.?thought|secret|api.?key|connection.?string/i;
+const forbiddenKey = /access.?token|refresh.?token|jwt|password|otp|cookie|authorization|provider.?raw|raw.?(?:provider.?)?(?:response|request)|hidden.?reason|chain.?of.?thought|secret|api.?key|connection.?string/i;
 const forbiddenValue = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*|postgres(?:ql)?:\/\/[^\s]+|-----BEGIN [A-Z ]+PRIVATE KEY-----/i;
 
 function assertNoCredential(value: unknown): void {

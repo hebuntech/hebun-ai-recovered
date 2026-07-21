@@ -1,4 +1,21 @@
-export { createCanonicalSignal } from "./canonical-signal";
+export { createCanonicalSignal, isCanonicalSignal } from "./canonical-signal";
+export { createCollectionPipeline } from "./collection-pipeline";
+export { createRequestCorrelationContext, normalizeProducerObservation } from "./collection-normalization";
+export type {
+  CanonicalSignalSink,
+  CollectionPipelineDependencies,
+  CollectionResult,
+  ProducerObservation,
+  RequestCorrelationContext,
+  RoutedCanonicalSignal,
+  SignalEmitter,
+} from "./collection-types";
+export {
+  InMemoryAppendOnlySignalSink,
+  SignalSinkCapacityError,
+  type InMemorySignalQuery,
+} from "./in-memory-sink";
+export { executeRedaction } from "./redaction";
 export { SignalContractError, type SignalContractErrorCode } from "./errors";
 export {
   canonicalSignalSchemaRegistry,
@@ -11,6 +28,7 @@ export type {
   SignalPolicyDecision,
   SignalPolicyEngine,
   SignalRetentionClass,
+  SignalRoute,
 } from "./policy";
 export {
   assertSignalNotReplay,

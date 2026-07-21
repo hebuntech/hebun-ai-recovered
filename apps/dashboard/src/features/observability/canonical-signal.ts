@@ -16,6 +16,8 @@ import {
   validateScope,
 } from "./validation";
 
+const canonicalSignals = new WeakSet<object>();
+
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     for (const nested of Object.values(value)) deepFreeze(nested);
@@ -109,7 +111,7 @@ export function createCanonicalSignal<T extends CanonicalSignalType>(input: {
     previousCanonicalEventTime: input.previousCanonicalEventTime,
   });
 
-  return deepFreeze({
+  const signal = deepFreeze({
     signalId: candidate.signalId,
     signalType: policyDecision.signalType,
     schemaVersion: policyDecision.schemaVersion,
@@ -130,4 +132,10 @@ export function createCanonicalSignal<T extends CanonicalSignalType>(input: {
     metadata: { ...metadata },
     evidenceCompleteness: candidate.evidenceCompleteness,
   }) as unknown as CanonicalSignal<T>;
+  canonicalSignals.add(signal);
+  return signal;
+}
+
+export function isCanonicalSignal(value: unknown): value is CanonicalSignal {
+  return typeof value === "object" && value !== null && canonicalSignals.has(value);
 }

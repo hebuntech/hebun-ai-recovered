@@ -8,6 +8,7 @@ import type {
 } from "./types";
 
 export type SignalDisposition = "telemetry" | "audit" | "discard";
+export type SignalRoute = Exclude<SignalDisposition, "discard">;
 export type SignalRetentionClass = "ephemeral" | "operational" | "security" | "compliance";
 
 export interface SignalPolicyDecision<T extends CanonicalSignalType = CanonicalSignalType> {
@@ -23,6 +24,7 @@ export interface SignalPolicyDecision<T extends CanonicalSignalType = CanonicalS
   readonly maxPayloadBytes: number;
   readonly sampled: boolean;
   readonly redactionApplied: boolean;
+  readonly approvedRoutes: readonly SignalRoute[];
   readonly reasonCode?: string;
 }
 

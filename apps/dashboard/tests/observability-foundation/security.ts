@@ -39,6 +39,7 @@ const decision: SignalPolicyDecision<"diagnostic"> = {
   maxPayloadBytes: 8_192,
   sampled: true,
   redactionApplied: true,
+  approvedRoutes: ["telemetry"],
 };
 
 function expectFailure(

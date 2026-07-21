@@ -40,6 +40,7 @@ const decision: SignalPolicyDecision<"metric"> = {
   maxPayloadBytes: 8_192,
   sampled: true,
   redactionApplied: true,
+  approvedRoutes: ["telemetry"],
 };
 
 function main(): void {

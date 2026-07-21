@@ -41,6 +41,7 @@ function expectMissingRejected(
     maxPayloadBytes: 8_192,
     sampled: true,
     redactionApplied: true,
+    approvedRoutes: ["telemetry"],
   };
   assert.throws(
     () => createCanonicalSignal({ candidate, policyDecision: decision, receivedAt: new Date("2026-07-21T12:00:01.000Z"), maxClockDriftMs: 5_000 }),
