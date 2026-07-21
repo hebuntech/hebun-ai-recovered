@@ -1,8 +1,8 @@
 import { DashboardFoundation } from "@/components/director-dashboard/dashboard-foundation";
-import { getDirectorDashboardSnapshot } from "@/features/director-dashboard/foundation";
+import { getDirectorDashboardUiModel } from "@/features/director-dashboard-ui/adapter.server";
 
 export default async function DirectorDashboardPage() {
-  const snapshot = await getDirectorDashboardSnapshot();
+  const widgetRuntime = getDirectorDashboardUiModel();
 
-  return <DashboardFoundation snapshot={snapshot} />;
+  return <DashboardFoundation widgetRuntime={widgetRuntime} />;
 }

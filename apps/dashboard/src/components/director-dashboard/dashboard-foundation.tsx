@@ -15,12 +15,27 @@ import { OrganizationalHealthSection } from "@/components/director-dashboard/org
 import { RecentDecisionsSection } from "@/components/director-dashboard/recent-decisions-section";
 import { WorkflowActivitySection } from "@/components/director-dashboard/workflow-activity-section";
 import type { DirectorDashboardSnapshot } from "@/features/director-dashboard/foundation";
+import type { DirectorDashboardUiModel } from "@/features/director-dashboard-ui/adapter.server";
+import { WidgetRuntimeBoard } from "@/components/director-dashboard/widget-runtime-board";
 
 interface DashboardFoundationProps {
-  snapshot: DirectorDashboardSnapshot;
+  snapshot?: DirectorDashboardSnapshot;
+  widgetRuntime?: DirectorDashboardUiModel;
 }
 
-export function DashboardFoundation({ snapshot }: DashboardFoundationProps) {
+export function DashboardFoundation({ snapshot, widgetRuntime }: DashboardFoundationProps) {
+  if (widgetRuntime) {
+    return (
+      <>
+        <PageHeader
+          title="Director Dashboard"
+          context="The operational control center of the company. Every widget reads the current immutable dashboard snapshot."
+        />
+        <WidgetRuntimeBoard initialSnapshot={widgetRuntime.snapshot} initialRuntime={widgetRuntime.widgets} />
+      </>
+    );
+  }
+  if (!snapshot) return null;
   const memoryProvider = snapshot.providers.find((provider) => provider.key === "memory");
   const postgresProvider = snapshot.providers.find((provider) => provider.key === "postgres");
 
