@@ -94,9 +94,28 @@ function dashboardContractsUnchanged(): void {
   assert.equal(dataTypes.includes("readonly authoritative: false;"), true);
   const navigationTypes = readFileSync("src/features/director-dashboard-navigation/types.ts", "utf8");
   assert.equal(navigationTypes.includes("export const NAVIGABLE_SECTION_IDS"), true);
-  // The dashboard does not consume the command feature yet: architecture only.
+  // The record detail contract is consumed, never extended: commands are
+  // derived alongside it rather than added to it.
+  assert.equal(navigationTypes.includes("commands"), false, "RecordDetailView must not gain a commands field");
+  // No dashboard surface renders commands: discovery is model-only.
   const consumers = ["src/components", "src/app"].flatMap((root) => grep(root, "director-command"));
   assert.deepEqual(consumers, [], "no dashboard surface may render commands in this phase");
+}
+
+/** The integration reads record details; it never reaches past them. */
+function integrationConsumesReadModelsOnly(): void {
+  const integration = sources.find(({ name }) => name === "record-commands.ts");
+  assert.notEqual(integration, undefined);
+  const text = integration!.text;
+  assert.equal(text.includes('from "../director-dashboard-navigation"'), true);
+  // It takes the detail as an argument rather than building one itself, so it
+  // cannot reach a snapshot, a runtime, or a widget on its own.
+  for (const forbidden of [
+    "createRecordDetailView", "createSectionListView", "createExecutiveOverview",
+    "getDirectorDashboardUiModel", "runtimeProjectionRegistry", "materializeRuntimeEvidence",
+  ]) {
+    assert.equal(text.includes(forbidden), false, `integration must not call ${forbidden}`);
+  }
 }
 
 function grep(root: string, needle: string): string[] {
@@ -120,6 +139,7 @@ function main(): void {
   definitionsCarryNoSensitiveData();
   legacyCommandPipelineUntouched();
   dashboardContractsUnchanged();
+  integrationConsumesReadModelsOnly();
   console.log("director command boundary checks passed");
 }
 

@@ -6,6 +6,15 @@ export {
   type PermissionDecision,
 } from "./permissions";
 export {
+  COMMAND_AVAILABILITY_STATES,
+  COMMAND_DISABLED_REASONS,
+  createRecordCommandView,
+  type CommandAvailabilityState,
+  type CommandDisabledReason,
+  type CommandPresentation,
+  type RecordCommandView,
+} from "./record-commands";
+export {
   createDefaultCommandRegistry,
   DirectorCommandRegistry,
   type CommandResolution,
