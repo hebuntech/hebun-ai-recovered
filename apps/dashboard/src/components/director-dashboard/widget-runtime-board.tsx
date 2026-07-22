@@ -8,6 +8,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SectionShell } from "@/components/director-dashboard/section-shell";
 import { ExecutiveOverviewSection } from "@/components/director-dashboard/executive-overview-section";
 import { ExecutiveInsightsSection } from "@/components/director-dashboard/executive-insights-section";
+import { SectionDetailList } from "@/components/director-dashboard/section-detail-list";
+import {
+  createSectionListView,
+  NAVIGABLE_SECTION_IDS,
+  type SectionListQuery,
+} from "@/features/director-dashboard-navigation";
 import {
   createExecutiveInsights,
   type ExecutiveInsight,
@@ -86,6 +92,10 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   const [overview, setOverview] = useState(initialOverview);
   const [insights, setInsights] = useState(initialInsights);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | undefined>(initialSnapshot);
+  // Read-only drill-down state. Holding the section id rather than a built list
+  // means every refresh re-derives the list from the newest snapshot.
+  const [openSectionId, setOpenSectionId] = useState<string | undefined>(undefined);
+  const [listQuery, setListQuery] = useState<SectionListQuery>({});
   // Monotonic token: only the most recent refresh may publish its result, so a
   // superseded refresh can never overwrite newer state with a stale snapshot.
   const refreshToken = useRef(0);
@@ -119,9 +129,30 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
       applyRuntime(engine.manualRefresh({ snapshot, authorityScope: dashboardScope }));
     });
   };
+  const openSection = (sectionId: string) => {
+    setOpenSectionId(sectionId);
+    setListQuery({});
+  };
+  // Derived, never stored: the list always reflects the current snapshot.
+  const listView = openSectionId
+    ? createSectionListView({ overview, runtime, sectionId: openSectionId, query: listQuery })
+    : undefined;
+
   return (
     <div className="space-y-6">
-      <ExecutiveOverviewSection overview={overview} />
+      <ExecutiveOverviewSection
+        overview={overview}
+        navigableSectionIds={NAVIGABLE_SECTION_IDS}
+        onOpenSection={openSection}
+      />
+      {listView ? (
+        <SectionDetailList
+          view={listView}
+          query={listQuery}
+          onQueryChange={setListQuery}
+          onClose={() => setOpenSectionId(undefined)}
+        />
+      ) : null}
       <ExecutiveInsightsSection insights={insights} />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2 text-sm text-fg-secondary">

@@ -27,7 +27,12 @@ const freshnessCopy = {
   unknown: "Snapshot age is unknown.",
 } as const;
 
-export function ExecutiveOverviewSection({ overview }: { readonly overview: ExecutiveOverview }) {
+export function ExecutiveOverviewSection({ overview, navigableSectionIds, onOpenSection }: {
+  readonly overview: ExecutiveOverview;
+  /** Sections that can be opened as a record list. Omit to render statically. */
+  readonly navigableSectionIds?: readonly string[];
+  readonly onOpenSection?: (sectionId: string) => void;
+}) {
   return (
     <SectionShell
       title="Executive Overview"
@@ -54,18 +59,32 @@ export function ExecutiveOverviewSection({ overview }: { readonly overview: Exec
           <span className="text-sm text-fg-secondary">{freshnessCopy[overview.freshness.state]}</span>
         </div>
         <div className="grid gap-x-6 divide-y divide-border sm:grid-cols-2 sm:divide-y-0">
-          {overview.sections.map((section) => (
-            <div
-              key={section.sectionId}
-              className="flex items-center justify-between gap-3 py-2 sm:border-b sm:border-border"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-fg">{section.label}</p>
-                <p className="text-xs text-fg-muted">{section.recordCount} records</p>
-              </div>
-              <Badge variant={healthVariant[section.health]}>{section.health}</Badge>
-            </div>
-          ))}
+          {overview.sections.map((section) => {
+            const openable = Boolean(onOpenSection) && (navigableSectionIds ?? []).includes(section.sectionId);
+            const body = (
+              <>
+                <div className="min-w-0 text-left">
+                  <p className="truncate text-sm font-medium text-fg">{section.label}</p>
+                  <p className="text-xs text-fg-muted">{section.recordCount} records</p>
+                </div>
+                <Badge variant={healthVariant[section.health]}>{section.health}</Badge>
+              </>
+            );
+            const shared = "flex w-full items-center justify-between gap-3 py-2 sm:border-b sm:border-border";
+            return openable ? (
+              <button
+                key={section.sectionId}
+                type="button"
+                onClick={() => onOpenSection?.(section.sectionId)}
+                aria-label={`Open ${section.label} records`}
+                className={`${shared} rounded-md text-left transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring`}
+              >
+                {body}
+              </button>
+            ) : (
+              <div key={section.sectionId} className={shared}>{body}</div>
+            );
+          })}
         </div>
       </div>
     </SectionShell>
