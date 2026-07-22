@@ -1,5 +1,26 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
 export {
+  RUNTIME_TARGET_RESOLUTION_ERROR_CODES,
+  RUNTIME_TARGET_RESOLUTION_MAPPING,
+  RUNTIME_TARGET_RESOLUTION_SOURCES,
+  RUNTIME_TARGET_RESOLUTION_VERSION,
+  createRuntimeTargetResolutionError,
+  unresolvedRuntimeTargetResolution,
+  type CanonicalRuntimeTarget,
+  type RuntimeTargetResolutionError,
+  type RuntimeTargetResolutionErrorCode,
+  type RuntimeTargetResolutionInput,
+  type RuntimeTargetResolutionMapping,
+  type RuntimeTargetResolutionResult,
+  type RuntimeTargetResolutionSource,
+} from "./runtime-target-resolution";
+export { RuntimeTargetResolver } from "./runtime-target-resolver";
+export {
+  validateRuntimeTargetResolutionRequest,
+  validateRuntimeTargetResolutionResult,
+  type RuntimeTargetResolutionValidation,
+} from "./runtime-target-resolution-validator";
+export {
   RUNTIME_ADAPTER_FAMILIES,
   RUNTIME_EXECUTION_ARCHITECTURE,
   RUNTIME_EXECUTION_ERROR_CODES,

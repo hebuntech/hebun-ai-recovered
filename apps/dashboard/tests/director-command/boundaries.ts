@@ -47,7 +47,8 @@ function exposesNoExecution(): void {
   const runtimeArchitectureContracts = new Set([
     "RUNTIME_ADAPTER_FAMILIES", "RUNTIME_EXECUTION_ARCHITECTURE", "RUNTIME_EXECUTION_ERROR_CODES",
     "RUNTIME_EXECUTION_LIFECYCLE_STATES", "RUNTIME_TARGET_KINDS", "UNRESOLVED_RUNTIME_EXECUTION_AUTHORITY",
-    "RuntimeExecutionGateway",
+    "RuntimeExecutionGateway", "RUNTIME_TARGET_RESOLUTION_ERROR_CODES", "RUNTIME_TARGET_RESOLUTION_MAPPING",
+    "RUNTIME_TARGET_RESOLUTION_SOURCES", "RUNTIME_TARGET_RESOLUTION_VERSION", "RuntimeTargetResolver",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
