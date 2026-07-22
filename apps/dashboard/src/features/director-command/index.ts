@@ -1,3 +1,4 @@
+export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
 export { validateCommandRequest } from "./command-validation";
 export { COMMAND_DEFINITION_VERSION, DIRECTOR_COMMAND_DEFINITIONS } from "./definitions";
 export {

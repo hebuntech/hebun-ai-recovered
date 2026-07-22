@@ -11,6 +11,11 @@ import { ExecutiveInsightsSection } from "@/components/director-dashboard/execut
 import { SectionDetailList } from "@/components/director-dashboard/section-detail-list";
 import { RecordDetailPanel } from "@/components/director-dashboard/record-detail-view";
 import {
+  createDefaultCommandRegistry,
+  createRecordCommandView,
+  UNRESOLVED_COMMAND_AUTHORITY,
+} from "@/features/director-command";
+import {
   createRecordDetailView,
   createSectionListView,
   NAVIGABLE_SECTION_IDS,
@@ -90,6 +95,7 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   readonly initialInsights: readonly ExecutiveInsight[];
 }) {
   const [engine] = useState(() => new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0"));
+  const [commandRegistry] = useState(createDefaultCommandRegistry);
   const [runtime, setRuntime] = useState(initialRuntime);
   const [overview, setOverview] = useState(initialOverview);
   const [insights, setInsights] = useState(initialInsights);
@@ -153,6 +159,18 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   const recordDetail = openSectionId && openRecordId
     ? createRecordDetailView({ overview, runtime, sectionId: openSectionId, recordId: openRecordId })
     : undefined;
+  /*
+   * Commands are derived for display only. The authority presented is empty
+   * because no identity model exists yet, so every command reports what it
+   * would require rather than claiming to be runnable.
+   */
+  const recordCommands = recordDetail
+    ? createRecordCommandView({
+        registry: commandRegistry,
+        detail: recordDetail,
+        authority: UNRESOLVED_COMMAND_AUTHORITY,
+      })
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -164,6 +182,7 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
       {recordDetail ? (
         <RecordDetailPanel
           detail={recordDetail}
+          commands={recordCommands}
           onBackToList={() => setOpenRecordId(undefined)}
           onBackToDashboard={backToDashboard}
         />

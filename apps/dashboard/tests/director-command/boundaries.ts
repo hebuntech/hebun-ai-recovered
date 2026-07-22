@@ -97,9 +97,26 @@ function dashboardContractsUnchanged(): void {
   // The record detail contract is consumed, never extended: commands are
   // derived alongside it rather than added to it.
   assert.equal(navigationTypes.includes("commands"), false, "RecordDetailView must not gain a commands field");
-  // No dashboard surface renders commands: discovery is model-only.
-  const consumers = ["src/components", "src/app"].flatMap((root) => grep(root, "director-command"));
-  assert.deepEqual(consumers, [], "no dashboard surface may render commands in this phase");
+  /*
+   * From Phase 4B.3 the dashboard presents commands, so consuming the feature
+   * is expected. What must stay true is the set of consumers and what they may
+   * do: read the presentation model, never reach an execution surface.
+   */
+  const consumers = ["src/components", "src/app"].flatMap((root) => grep(root, "director-command")).sort();
+  assert.deepEqual(consumers, [
+    "src/components/director-dashboard/record-command-panel.tsx",
+    "src/components/director-dashboard/record-detail-view.tsx",
+    "src/components/director-dashboard/widget-runtime-board.tsx",
+  ], "only the record command panel, the detail view and the board may consume commands");
+
+  for (const file of consumers) {
+    const text = readFileSync(file, "utf8");
+    for (const forbidden of ["validateCommandRequest", "evaluateCommandPermission", "executeCommand", "dispatchCommand"]) {
+      assert.equal(text.includes(forbidden), false, `${file} must not reach ${forbidden}`);
+    }
+  }
+  // No route or page consumes the feature: presentation lives in the board.
+  assert.deepEqual(grep("src/app", "director-command"), []);
 }
 
 /** The integration reads record details; it never reaches past them. */
