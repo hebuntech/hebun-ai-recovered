@@ -104,6 +104,7 @@ function dashboardContractsUnchanged(): void {
    */
   const consumers = ["src/components", "src/app"].flatMap((root) => grep(root, "director-command")).sort();
   assert.deepEqual(consumers, [
+    "src/components/director-dashboard/director-command-center-panel.tsx",
     "src/components/director-dashboard/record-command-panel.tsx",
     "src/components/director-dashboard/record-detail-view.tsx",
     "src/components/director-dashboard/widget-runtime-board.tsx",

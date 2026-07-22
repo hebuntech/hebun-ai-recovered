@@ -5,13 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SectionShell } from "@/components/director-dashboard/section-shell";
 import { RecordCommandPanel } from "@/components/director-dashboard/record-command-panel";
+import { DirectorCommandCenterPanel } from "@/components/director-dashboard/director-command-center-panel";
 import type { RecordDetailView } from "@/features/director-dashboard-navigation";
-import type { RecordCommandView } from "@/features/director-command";
+import type { DirectorCommandCenterModel, RecordCommandView } from "@/features/director-command";
 
-export function RecordDetailPanel({ detail, commands, onBackToList, onBackToDashboard }: {
+export function RecordDetailPanel({ detail, commands, commandCenter, onBackToList, onBackToDashboard }: {
   readonly detail: RecordDetailView;
   /** Omit to render the detail without its command panel. */
   readonly commands?: RecordCommandView;
+  /** Omit to render the detail without immutable Command Center metadata. */
+  readonly commandCenter?: DirectorCommandCenterModel;
   readonly onBackToList: () => void;
   readonly onBackToDashboard: () => void;
 }) {
@@ -62,6 +65,7 @@ export function RecordDetailPanel({ detail, commands, onBackToList, onBackToDash
         </dl>
 
         {commands ? <RecordCommandPanel view={commands} /> : null}
+        {commandCenter ? <DirectorCommandCenterPanel model={commandCenter} /> : null}
 
         <p className="text-xs text-fg-muted">
           This view is read-only and belongs to one immutable snapshot. Refresh the dashboard to read newer state.

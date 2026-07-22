@@ -1,5 +1,11 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
 export {
+  createDirectorCommandCenterModel,
+  type DirectorCommandCenterCommandModel,
+  type DirectorCommandCenterDependencies,
+  type DirectorCommandCenterModel,
+} from "./command-center-orchestration";
+export {
   appendCommandAuditEvent,
   COMMAND_AUDIT_EVENT_TYPES,
   CommandAuditEventBuilder,

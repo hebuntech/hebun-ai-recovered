@@ -12,6 +12,10 @@ import { SectionDetailList } from "@/components/director-dashboard/section-detai
 import { RecordDetailPanel } from "@/components/director-dashboard/record-detail-view";
 import {
   createDefaultCommandRegistry,
+  CommandAuditEventBuilder,
+  CommandEnvelopeBus,
+  CommandExecutionEngine,
+  createDirectorCommandCenterModel,
   createRecordCommandView,
   UNRESOLVED_COMMAND_AUTHORITY,
 } from "@/features/director-command";
@@ -96,6 +100,19 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
 }) {
   const [engine] = useState(() => new WidgetRefreshEngine(createDefaultWidgetRegistry(), "1.0.0"));
   const [commandRegistry] = useState(createDefaultCommandRegistry);
+  const [commandCenterDependencies] = useState(() => ({
+    registry: commandRegistry,
+    authority: UNRESOLVED_COMMAND_AUTHORITY,
+    commandBus: new CommandEnvelopeBus({
+      now: () => new Date(),
+      createCorrelationId: () => "dashboard-command-correlation",
+    }),
+    executionEngine: new CommandExecutionEngine({ registry: commandRegistry }),
+    auditBuilder: new CommandAuditEventBuilder({
+      now: () => new Date(),
+      createEventId: () => "dashboard-command-audit-event",
+    }),
+  }));
   const [runtime, setRuntime] = useState(initialRuntime);
   const [overview, setOverview] = useState(initialOverview);
   const [insights, setInsights] = useState(initialInsights);
@@ -171,6 +188,9 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
         authority: UNRESOLVED_COMMAND_AUTHORITY,
       })
     : undefined;
+  const commandCenter = recordDetail
+    ? createDirectorCommandCenterModel(recordDetail, commandCenterDependencies)
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -183,6 +203,7 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
         <RecordDetailPanel
           detail={recordDetail}
           commands={recordCommands}
+          commandCenter={commandCenter}
           onBackToList={() => setOpenRecordId(undefined)}
           onBackToDashboard={backToDashboard}
         />
