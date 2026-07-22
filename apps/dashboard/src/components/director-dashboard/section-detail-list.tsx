@@ -36,11 +36,13 @@ function stateCopy(view: SectionListView): { readonly title: string; readonly de
   };
 }
 
-export function SectionDetailList({ view, query, onQueryChange, onClose }: {
+export function SectionDetailList({ view, query, onQueryChange, onClose, onOpenRecord }: {
   readonly view: SectionListView;
   readonly query: SectionListQuery;
   readonly onQueryChange: (next: SectionListQuery) => void;
   readonly onClose: () => void;
+  /** Omit to render the list without record drill-down. */
+  readonly onOpenRecord?: (recordId: string) => void;
 }) {
   const empty = stateCopy(view);
   const filtered = view.rows.length !== view.totalCount;
@@ -125,15 +127,31 @@ export function SectionDetailList({ view, query, onQueryChange, onClose }: {
                 Showing {view.rows.length} of {view.totalCount} records.
               </p>
             ) : null}
-            {view.rows.map((row) => (
-              <div key={row.id} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-fg">{row.label}</p>
-                  <p className="truncate text-xs text-fg-muted">{row.value}</p>
-                </div>
-                <Badge variant="neutral">{row.status}</Badge>
-              </div>
-            ))}
+            {view.rows.map((row) => {
+              const body = (
+                <>
+                  <div className="min-w-0 text-left">
+                    <p className="truncate text-sm text-fg">{row.label}</p>
+                    <p className="truncate text-xs text-fg-muted">{row.value}</p>
+                  </div>
+                  <Badge variant="neutral">{row.status}</Badge>
+                </>
+              );
+              const shared = "flex w-full items-center justify-between gap-3 py-2 first:pt-0 last:pb-0";
+              return onOpenRecord ? (
+                <button
+                  key={row.id}
+                  type="button"
+                  onClick={() => onOpenRecord(row.id)}
+                  aria-label={`Open record ${row.label}`}
+                  className={`${shared} rounded-md text-left transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring`}
+                >
+                  {body}
+                </button>
+              ) : (
+                <div key={row.id} className={shared}>{body}</div>
+              );
+            })}
           </div>
         )}
       </div>

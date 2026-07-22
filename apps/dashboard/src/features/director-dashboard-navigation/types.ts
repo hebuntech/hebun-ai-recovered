@@ -52,6 +52,37 @@ export interface SectionListRow extends WidgetDisplayItem {
   readonly status: string;
 }
 
+/** Rendered in place of any field the read models do not carry. */
+export const UNAVAILABLE_FIELD = "Unavailable";
+
+export interface RecordDetailField {
+  readonly key: string;
+  readonly label: string;
+  readonly value: string;
+  /** False when the read models carry no value; the UI renders "Unavailable". */
+  readonly available: boolean;
+}
+
+export interface RecordDetailView {
+  readonly sectionId: ExecutiveSectionId;
+  readonly widgetId: DashboardWidgetId;
+  /** Section label, used as the record's category. */
+  readonly category: string;
+  readonly recordId: string;
+  readonly displayName: string;
+  readonly status: string;
+  readonly description: string;
+  readonly descriptionAvailable: boolean;
+  /** Section-specific read-only metadata, in stable order. */
+  readonly fields: readonly RecordDetailField[];
+  readonly evidenceCount: number;
+  readonly sourceSnapshotId?: string;
+  readonly snapshotTimestamp?: string;
+  readonly snapshotFreshness: "fresh" | "stale" | "unknown";
+  readonly evaluatedAt: string;
+  readonly authoritative: false;
+}
+
 export interface SectionListView {
   readonly sectionId: ExecutiveSectionId;
   readonly widgetId: DashboardWidgetId;

@@ -9,7 +9,9 @@ import { SectionShell } from "@/components/director-dashboard/section-shell";
 import { ExecutiveOverviewSection } from "@/components/director-dashboard/executive-overview-section";
 import { ExecutiveInsightsSection } from "@/components/director-dashboard/executive-insights-section";
 import { SectionDetailList } from "@/components/director-dashboard/section-detail-list";
+import { RecordDetailPanel } from "@/components/director-dashboard/record-detail-view";
 import {
+  createRecordDetailView,
   createSectionListView,
   NAVIGABLE_SECTION_IDS,
   type SectionListQuery,
@@ -95,6 +97,7 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   // Read-only drill-down state. Holding the section id rather than a built list
   // means every refresh re-derives the list from the newest snapshot.
   const [openSectionId, setOpenSectionId] = useState<string | undefined>(undefined);
+  const [openRecordId, setOpenRecordId] = useState<string | undefined>(undefined);
   const [listQuery, setListQuery] = useState<SectionListQuery>({});
   // Monotonic token: only the most recent refresh may publish its result, so a
   // superseded refresh can never overwrite newer state with a stale snapshot.
@@ -131,11 +134,24 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
   };
   const openSection = (sectionId: string) => {
     setOpenSectionId(sectionId);
+    setOpenRecordId(undefined);
     setListQuery({});
   };
-  // Derived, never stored: the list always reflects the current snapshot.
+  const backToDashboard = () => {
+    setOpenSectionId(undefined);
+    setOpenRecordId(undefined);
+  };
+  /*
+   * Both views are derived, never stored: the open section and record ids are
+   * the only navigation state, so every refresh re-derives the list and the
+   * detail from the newest snapshot. The list query survives a record visit,
+   * which keeps the list where the user left it on the way back.
+   */
   const listView = openSectionId
     ? createSectionListView({ overview, runtime, sectionId: openSectionId, query: listQuery })
+    : undefined;
+  const recordDetail = openSectionId && openRecordId
+    ? createRecordDetailView({ overview, runtime, sectionId: openSectionId, recordId: openRecordId })
     : undefined;
 
   return (
@@ -145,12 +161,19 @@ export function WidgetRuntimeBoard({ initialSnapshot, initialRuntime, initialOve
         navigableSectionIds={NAVIGABLE_SECTION_IDS}
         onOpenSection={openSection}
       />
-      {listView ? (
+      {recordDetail ? (
+        <RecordDetailPanel
+          detail={recordDetail}
+          onBackToList={() => setOpenRecordId(undefined)}
+          onBackToDashboard={backToDashboard}
+        />
+      ) : listView ? (
         <SectionDetailList
           view={listView}
           query={listQuery}
           onQueryChange={setListQuery}
-          onClose={() => setOpenSectionId(undefined)}
+          onClose={backToDashboard}
+          onOpenRecord={setOpenRecordId}
         />
       ) : null}
       <ExecutiveInsightsSection insights={insights} />

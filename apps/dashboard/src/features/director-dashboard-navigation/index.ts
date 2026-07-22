@@ -1,4 +1,5 @@
 export { createSectionListView } from "./list-view";
+export { createRecordDetailView } from "./record-detail";
 export {
   createNavigationTargets,
   findNavigationTarget,
@@ -7,6 +8,9 @@ export {
 export {
   NAVIGABLE_SECTION_IDS,
   NON_NAVIGABLE_SECTION_IDS,
+  UNAVAILABLE_FIELD,
+  type RecordDetailField,
+  type RecordDetailView,
   type ListSortDirection,
   type ListSortField,
   type NavigableSectionId,
