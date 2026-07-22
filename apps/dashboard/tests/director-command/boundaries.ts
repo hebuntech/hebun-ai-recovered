@@ -42,9 +42,16 @@ function exposesNoExecution(): void {
   ]) {
     assert.equal(all.includes(forbidden), false, `feature must not use ${forbidden}`);
   }
-  // No exported symbol suggests or performs execution.
+  // Phase 4C.1 exports named Runtime execution *contracts*. They are not
+  // callable execution entry points and remain explicitly non-authoritative.
+  const runtimeArchitectureContracts = new Set([
+    "RUNTIME_ADAPTER_FAMILIES", "RUNTIME_EXECUTION_ARCHITECTURE", "RUNTIME_EXECUTION_ERROR_CODES",
+    "RUNTIME_EXECUTION_LIFECYCLE_STATES", "RUNTIME_TARGET_KINDS", "UNRESOLVED_RUNTIME_EXECUTION_AUTHORITY",
+    "RuntimeExecutionGateway",
+  ]);
+  // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
-    assert.equal(/^(execute|run|dispatch|invoke|perform|apply|commit|send)/i.test(exported), false,
+    assert.equal(runtimeArchitectureContracts.has(exported) || !/^(execute|run|dispatch|invoke|perform|apply|commit|send)/i.test(exported), true,
       `${exported} must not be an execution entry point`);
   }
   assert.equal("executeCommand" in directorCommand, false);
