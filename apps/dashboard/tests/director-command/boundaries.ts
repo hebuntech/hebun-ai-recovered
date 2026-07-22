@@ -49,6 +49,7 @@ function exposesNoExecution(): void {
     "RUNTIME_EXECUTION_LIFECYCLE_STATES", "RUNTIME_TARGET_KINDS", "UNRESOLVED_RUNTIME_EXECUTION_AUTHORITY",
     "RuntimeExecutionGateway", "RUNTIME_TARGET_RESOLUTION_ERROR_CODES", "RUNTIME_TARGET_RESOLUTION_MAPPING",
     "RUNTIME_TARGET_RESOLUTION_SOURCES", "RUNTIME_TARGET_RESOLUTION_VERSION", "RuntimeTargetResolver",
+    "RUNTIME_ADAPTER_AVAILABILITY_STATES", "RUNTIME_ADAPTER_DESCRIPTORS", "RUNTIME_ADAPTER_ERROR_CODES", "RuntimeAdapterRegistry",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {

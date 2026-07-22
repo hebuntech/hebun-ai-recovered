@@ -1,5 +1,19 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
 export {
+  RUNTIME_ADAPTER_AVAILABILITY_STATES,
+  RUNTIME_ADAPTER_DESCRIPTORS,
+  RUNTIME_ADAPTER_ERROR_CODES,
+  createRuntimeAdapterConstructionPlan,
+  type RuntimeAdapterAvailability,
+  type RuntimeAdapterConstructionPlan,
+  type RuntimeAdapterDescriptor,
+  type RuntimeAdapterError,
+  type RuntimeAdapterErrorCode,
+  type RuntimeAdapterSelectionResult,
+} from "./runtime-adapter-framework";
+export { RuntimeAdapterRegistry } from "./runtime-adapter-registry";
+export { selectRuntimeAdapter } from "./runtime-adapter-selection";
+export {
   RUNTIME_TARGET_RESOLUTION_ERROR_CODES,
   RUNTIME_TARGET_RESOLUTION_MAPPING,
   RUNTIME_TARGET_RESOLUTION_SOURCES,
