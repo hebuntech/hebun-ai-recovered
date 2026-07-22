@@ -1,4 +1,14 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
+export {
+  COMMAND_EXECUTION_ERROR_CODES,
+  CommandExecutionEngine,
+  NOT_IMPLEMENTED_COMMAND_EXECUTION_ADAPTER,
+  type CommandExecutionAdapter,
+  type CommandExecutionAdapterResult,
+  type CommandExecutionError,
+  type CommandExecutionErrorCode,
+  type CommandExecutionResult,
+} from "./command-execution-engine";
 export { validateCommandRequest } from "./command-validation";
 export { COMMAND_DEFINITION_VERSION, DIRECTOR_COMMAND_DEFINITIONS } from "./definitions";
 export {
