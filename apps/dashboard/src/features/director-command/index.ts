@@ -21,6 +21,16 @@ export {
   type CommandResolution,
 } from "./registry";
 export {
+  COMMAND_REQUEST_ORIGINS,
+  CommandEnvelopeBus,
+  serializeRuntimeCommandEnvelope,
+  type CommandRequestOrigin,
+  type RuntimeCommandBusDependencies,
+  type RuntimeCommandBusRequest,
+  type RuntimeCommandEnvelope,
+  type RuntimeCommandEnvelopeMetadata,
+} from "./runtime-command-bus";
+export {
   createCommandConfirmationModel,
   type CommandConfirmationModel,
 } from "./safety";
