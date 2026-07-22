@@ -4,6 +4,9 @@ import {
   COMMAND_DEFINITION_VERSION,
   COMMAND_PRIVILEGES,
   COMMAND_RISK_LEVELS,
+  COMMAND_ROLLBACK_AVAILABILITY,
+  COMMAND_SAFETY_CATEGORIES,
+  COMMAND_SAFETY_RISK_LEVELS,
   createDefaultCommandRegistry,
   DIRECTOR_COMMAND_DEFINITIONS,
   DIRECTOR_COMMAND_IDS,
@@ -22,6 +25,16 @@ function definition(overrides: Partial<DirectorCommandDefinition> = {}): Directo
     description: "Hold a running workflow.",
     category: "lifecycle",
     risk: "medium",
+    safety: {
+      riskLevel: "medium",
+      category: "operational",
+      confirmationRequired: true,
+      userImpact: "limited",
+      systemImpact: "localized",
+      estimatedEffect: "Holds one running workflow.",
+      rollbackAvailability: "available",
+      auditRequired: true,
+    },
     targetSectionId: "active-workflows",
     permission: { capability: "workflow.lifecycle", minimumPrivilege: "medium", requiresApproval: true },
     executable: false,
@@ -47,6 +60,9 @@ function definitionsUseCanonicalVocabulary(): void {
     assert.equal((DIRECTOR_COMMAND_IDS as readonly string[]).includes(command.commandId), true);
     assert.equal((COMMAND_CATEGORIES as readonly string[]).includes(command.category), true);
     assert.equal((COMMAND_RISK_LEVELS as readonly string[]).includes(command.risk), true);
+    assert.equal((COMMAND_SAFETY_RISK_LEVELS as readonly string[]).includes(command.safety.riskLevel), true);
+    assert.equal((COMMAND_SAFETY_CATEGORIES as readonly string[]).includes(command.safety.category), true);
+    assert.equal((COMMAND_ROLLBACK_AVAILABILITY as readonly string[]).includes(command.safety.rollbackAvailability), true);
     assert.equal((COMMAND_PRIVILEGES as readonly string[]).includes(command.permission.minimumPrivilege), true);
     // Targets reuse the dashboard's own navigable sections, not a parallel list.
     assert.equal((NAVIGABLE_SECTION_IDS as readonly string[]).includes(command.targetSectionId), true);
@@ -85,6 +101,11 @@ function rejectsInvalidDefinitions(): void {
     { description: "   " },
     { category: "made-up" as never },
     { risk: "catastrophic" as never },
+    { safety: { ...definition().safety, riskLevel: "catastrophic" as never } },
+    { safety: { ...definition().safety, category: "unknown" as never } },
+    { safety: { ...definition().safety, estimatedEffect: "" } },
+    { safety: { ...definition().safety, rollbackAvailability: "maybe" as never } },
+    { safety: { ...definition().safety, auditRequired: "yes" as never } },
     { targetSectionId: "evaluation-summary" as never },
     { permission: { capability: "nope", minimumPrivilege: "medium", requiresApproval: true } as never },
     { permission: { capability: "workflow.lifecycle", minimumPrivilege: "root", requiresApproval: true } as never },
@@ -127,11 +148,15 @@ function isImmutable(): void {
   const command = registry.list()[0]!;
   assert.equal(Object.isFrozen(command), true);
   assert.equal(Object.isFrozen(command.permission), true);
+  assert.equal(Object.isFrozen(command.safety), true);
   assert.throws(() => {
     (command as unknown as { label: string }).label = "tampered";
   });
   assert.throws(() => {
     (command.permission as unknown as { requiresApproval: boolean }).requiresApproval = false;
+  });
+  assert.throws(() => {
+    (command.safety as unknown as { riskLevel: string }).riskLevel = "low";
   });
   assert.throws(() => {
     (registry.list() as unknown as { push: (value: unknown) => void }).push({});

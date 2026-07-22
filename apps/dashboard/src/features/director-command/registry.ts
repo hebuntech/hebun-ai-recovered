@@ -4,6 +4,11 @@ import {
   COMMAND_CATEGORIES,
   COMMAND_PRIVILEGES,
   COMMAND_RISK_LEVELS,
+  COMMAND_ROLLBACK_AVAILABILITY,
+  COMMAND_SAFETY_CATEGORIES,
+  COMMAND_SAFETY_RISK_LEVELS,
+  COMMAND_SYSTEM_IMPACTS,
+  COMMAND_USER_IMPACTS,
   DIRECTOR_COMMAND_IDS,
   type DirectorCommandDefinition,
 } from "./types";
@@ -21,6 +26,14 @@ function validate(input: DirectorCommandDefinition): DirectorCommandDefinition {
     !validText(input.label) || !validText(input.description) ||
     !(COMMAND_CATEGORIES as readonly string[]).includes(input.category) ||
     !(COMMAND_RISK_LEVELS as readonly string[]).includes(input.risk) ||
+    !(COMMAND_SAFETY_RISK_LEVELS as readonly string[]).includes(input.safety.riskLevel) ||
+    !(COMMAND_SAFETY_CATEGORIES as readonly string[]).includes(input.safety.category) ||
+    typeof input.safety.confirmationRequired !== "boolean" ||
+    !(COMMAND_USER_IMPACTS as readonly string[]).includes(input.safety.userImpact) ||
+    !(COMMAND_SYSTEM_IMPACTS as readonly string[]).includes(input.safety.systemImpact) ||
+    !validText(input.safety.estimatedEffect) ||
+    !(COMMAND_ROLLBACK_AVAILABILITY as readonly string[]).includes(input.safety.rollbackAvailability) ||
+    typeof input.safety.auditRequired !== "boolean" ||
     !(NAVIGABLE_SECTION_IDS as readonly string[]).includes(input.targetSectionId) ||
     !(COMMAND_CAPABILITIES as readonly string[]).includes(input.permission.capability) ||
     !(COMMAND_PRIVILEGES as readonly string[]).includes(input.permission.minimumPrivilege) ||
@@ -32,7 +45,7 @@ function validate(input: DirectorCommandDefinition): DirectorCommandDefinition {
   ) {
     throw new TypeError("Invalid director command definition.");
   }
-  return deepFreeze({ ...input, permission: { ...input.permission } });
+  return deepFreeze({ ...input, permission: { ...input.permission }, safety: { ...input.safety } });
 }
 
 /**

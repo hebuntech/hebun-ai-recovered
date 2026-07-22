@@ -25,6 +25,37 @@ export type CommandCategory = (typeof COMMAND_CATEGORIES)[number];
 export const COMMAND_RISK_LEVELS = ["low", "medium", "high"] as const;
 export type CommandRiskLevel = (typeof COMMAND_RISK_LEVELS)[number];
 
+/** Immutable safety vocabulary for a future command confirmation step. */
+export const COMMAND_SAFETY_RISK_LEVELS = ["informational", "low", "medium", "high", "critical"] as const;
+export type CommandSafetyRiskLevel = (typeof COMMAND_SAFETY_RISK_LEVELS)[number];
+
+export const COMMAND_SAFETY_CATEGORIES = ["operational", "recovery", "observability"] as const;
+export type CommandSafetyCategory = (typeof COMMAND_SAFETY_CATEGORIES)[number];
+
+export const COMMAND_USER_IMPACTS = ["none", "limited", "material"] as const;
+export type CommandUserImpact = (typeof COMMAND_USER_IMPACTS)[number];
+
+export const COMMAND_SYSTEM_IMPACTS = ["none", "localized", "system-wide"] as const;
+export type CommandSystemImpact = (typeof COMMAND_SYSTEM_IMPACTS)[number];
+
+export const COMMAND_ROLLBACK_AVAILABILITY = ["not-applicable", "available", "manual", "unavailable"] as const;
+export type CommandRollbackAvailability = (typeof COMMAND_ROLLBACK_AVAILABILITY)[number];
+
+/**
+ * Declarative safety characteristics. They are fixed in the registry and are
+ * never inferred from runtime state, so a confirmation can be prepared safely.
+ */
+export interface CommandSafetyMetadata {
+  readonly riskLevel: CommandSafetyRiskLevel;
+  readonly category: CommandSafetyCategory;
+  readonly confirmationRequired: boolean;
+  readonly userImpact: CommandUserImpact;
+  readonly systemImpact: CommandSystemImpact;
+  readonly estimatedEffect: string;
+  readonly rollbackAvailability: CommandRollbackAvailability;
+  readonly auditRequired: boolean;
+}
+
 /**
  * Privilege vocabulary, matching the tiers the governance surface already
  * uses, so a future authority model does not have to reconcile two scales.
@@ -58,6 +89,7 @@ export interface DirectorCommandDefinition {
   readonly description: string;
   readonly category: CommandCategory;
   readonly risk: CommandRiskLevel;
+  readonly safety: CommandSafetyMetadata;
   /** Dashboard section whose records this command would target. */
   readonly targetSectionId: NavigableSectionId;
   readonly permission: CommandPermission;
