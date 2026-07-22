@@ -1,5 +1,18 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
 export {
+  appendCommandAuditEvent,
+  COMMAND_AUDIT_EVENT_TYPES,
+  CommandAuditEventBuilder,
+  createCommandAuditTimeline,
+  serializeCommandAuditTimeline,
+  type CommandAuditEvent,
+  type CommandAuditEventBuilderDependencies,
+  type CommandAuditEventType,
+  type CommandAuditExecutionResult,
+  type CommandAuditTimeline,
+  type CommandHistoryEntry,
+} from "./command-history-audit";
+export {
   COMMAND_EXECUTION_ERROR_CODES,
   CommandExecutionEngine,
   NOT_IMPLEMENTED_COMMAND_EXECUTION_ADAPTER,
