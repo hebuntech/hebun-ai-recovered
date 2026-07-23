@@ -61,6 +61,7 @@ function exposesNoExecution(): void {
     "RUNTIME_RISK_VERSION", "RUNTIME_RISK_LEVELS", "RUNTIME_RISK_DOMAINS", "RUNTIME_IMPACT_SCOPES", "RUNTIME_BLAST_RADII", "RUNTIME_REVERSIBILITY", "RUNTIME_DATA_SENSITIVITIES", "RUNTIME_SIDE_EFFECT_PROFILES", "RUNTIME_APPROVAL_MODES", "RUNTIME_APPROVAL_CONSTRAINTS", "RUNTIME_RISK_ERROR_CODES",
     "RUNTIME_HUMAN_APPROVAL_VERSION", "RUNTIME_APPROVAL_STATUSES", "RUNTIME_APPROVAL_DECISIONS", "RUNTIME_HUMAN_APPROVAL_ERROR_CODES",
     "RUNTIME_EXECUTION_PERMIT_VERSION", "RUNTIME_PERMIT_STATUSES", "RUNTIME_PERMIT_ERROR_CODES",
+    "RUNTIME_EXECUTION_PERMIT_LIFECYCLE_VERSION", "RUNTIME_PERMIT_LIFECYCLE_STATES", "RUNTIME_PERMIT_LIFECYCLE_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -172,7 +173,7 @@ function runtimeAuthorityHasNoReverseDependencies(): void {
   const authority = sources.find(({ name }) => name === "runtime-authority.ts");
   assert.notEqual(authority, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-authority.ts" && name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-authority.ts" && name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-authority"'), false, `${name} must not depend on Phase 4D.1`);
     }
   }
@@ -183,7 +184,7 @@ function runtimeAuthorityIdentityHasNoReverseDependencies(): void {
   const identity = sources.find(({ name }) => name === "runtime-authority-identity.ts");
   assert.notEqual(identity, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-authority-identity"'), false, `${name} must not depend on Phase 4D.2`);
     }
   }
@@ -194,7 +195,7 @@ function runtimePolicyHasNoReverseDependencies(): void {
   const policy = sources.find(({ name }) => name === "runtime-policy.ts");
   assert.notEqual(policy, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-policy"'), false, `${name} must not depend on Phase 4D.3`);
     }
   }
@@ -205,7 +206,7 @@ function runtimeRiskHasNoReverseDependencies(): void {
   const risk = sources.find(({ name }) => name === "runtime-risk-classification.ts");
   assert.notEqual(risk, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-risk-classification.ts" && name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-risk-classification"'), false, `${name} must not depend on Phase 4D.4`);
     }
   }
@@ -216,7 +217,7 @@ function runtimeHumanApprovalHasNoReverseDependencies(): void {
   const approval = sources.find(({ name }) => name === "runtime-human-approval.ts");
   assert.notEqual(approval, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-human-approval.ts" && name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-human-approval"'), false, `${name} must not depend on Phase 4D.5`);
     }
   }
@@ -227,8 +228,19 @@ function runtimeExecutionPermitHasNoReverseDependencies(): void {
   const permit = sources.find(({ name }) => name === "runtime-execution-permit.ts");
   assert.notEqual(permit, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-execution-permit.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-execution-permit"'), false, `${name} must not depend on Phase 4D.6`);
+    }
+  }
+}
+
+/** Phase 4D.7 lifecycle metadata is terminal; earlier layers may not consume it. */
+function runtimeExecutionPermitLifecycleHasNoReverseDependencies(): void {
+  const lifecycle = sources.find(({ name }) => name === "runtime-execution-permit-lifecycle.ts");
+  assert.notEqual(lifecycle, undefined);
+  for (const { name, text } of sources) {
+    if (name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-execution-permit-lifecycle"'), false, `${name} must not depend on Phase 4D.7`);
     }
   }
 }
@@ -262,6 +274,7 @@ function main(): void {
   runtimeRiskHasNoReverseDependencies();
   runtimeHumanApprovalHasNoReverseDependencies();
   runtimeExecutionPermitHasNoReverseDependencies();
+  runtimeExecutionPermitLifecycleHasNoReverseDependencies();
   console.log("director command boundary checks passed");
 }
 
