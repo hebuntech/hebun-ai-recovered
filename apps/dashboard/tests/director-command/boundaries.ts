@@ -58,6 +58,7 @@ function exposesNoExecution(): void {
     "RUNTIME_AUTHORITY_ERROR_CODES", "RUNTIME_AUTHORITY_REASON_CODES", "RUNTIME_AUTHORITY_STATUSES", "RUNTIME_AUTHORITY_VERSION",
     "RUNTIME_AUTHORITY_IDENTITY_ERROR_CODES", "RUNTIME_AUTHORITY_IDENTITY_VERSION", "RUNTIME_AUTHORITY_PRINCIPAL_TYPES",
     "RUNTIME_POLICY_EFFECTS", "RUNTIME_POLICY_ERROR_CODES", "RUNTIME_POLICY_VERSION",
+    "RUNTIME_RISK_VERSION", "RUNTIME_RISK_LEVELS", "RUNTIME_RISK_DOMAINS", "RUNTIME_IMPACT_SCOPES", "RUNTIME_BLAST_RADII", "RUNTIME_REVERSIBILITY", "RUNTIME_DATA_SENSITIVITIES", "RUNTIME_SIDE_EFFECT_PROFILES", "RUNTIME_APPROVAL_MODES", "RUNTIME_APPROVAL_CONSTRAINTS", "RUNTIME_RISK_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -169,7 +170,7 @@ function runtimeAuthorityHasNoReverseDependencies(): void {
   const authority = sources.find(({ name }) => name === "runtime-authority.ts");
   assert.notEqual(authority, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-authority.ts" && name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-authority.ts" && name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-authority"'), false, `${name} must not depend on Phase 4D.1`);
     }
   }
@@ -180,7 +181,7 @@ function runtimeAuthorityIdentityHasNoReverseDependencies(): void {
   const identity = sources.find(({ name }) => name === "runtime-authority-identity.ts");
   assert.notEqual(identity, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-authority-identity.ts" && name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-authority-identity"'), false, `${name} must not depend on Phase 4D.2`);
     }
   }
@@ -191,8 +192,19 @@ function runtimePolicyHasNoReverseDependencies(): void {
   const policy = sources.find(({ name }) => name === "runtime-policy.ts");
   assert.notEqual(policy, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-policy.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-policy.ts" && name !== "runtime-risk-classification.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-policy"'), false, `${name} must not depend on Phase 4D.3`);
+    }
+  }
+}
+
+/** Phase 4D.4 is terminal metadata; no prior Runtime or Authority layer may consume it. */
+function runtimeRiskHasNoReverseDependencies(): void {
+  const risk = sources.find(({ name }) => name === "runtime-risk-classification.ts");
+  assert.notEqual(risk, undefined);
+  for (const { name, text } of sources) {
+    if (name !== "runtime-risk-classification.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-risk-classification"'), false, `${name} must not depend on Phase 4D.4`);
     }
   }
 }
@@ -223,6 +235,7 @@ function main(): void {
   runtimeAuthorityHasNoReverseDependencies();
   runtimeAuthorityIdentityHasNoReverseDependencies();
   runtimePolicyHasNoReverseDependencies();
+  runtimeRiskHasNoReverseDependencies();
   console.log("director command boundary checks passed");
 }
 
