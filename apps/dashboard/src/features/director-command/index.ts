@@ -1,4 +1,5 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
+export { RUNTIME_EXECUTION_OUTCOMES, RUNTIME_OUTCOME_ERROR_CODES, RUNTIME_PROJECTION_TARGETS, RUNTIME_RESULT_CLASSIFICATIONS, createRuntimeOutcomeProjection, validateRuntimeOutcomeProjection, type RuntimeOutcomeProjection } from "./runtime-outcome";
 export { RUNTIME_CANCELLATION_POLICIES, RUNTIME_EXECUTION_READINESS_STATES, RUNTIME_ROLLBACK_CLASSIFICATIONS, RUNTIME_SAFETY_CLASSIFICATIONS, RUNTIME_SAFETY_ERROR_CODES, RUNTIME_TIMEOUT_CLASSES, createRuntimeSafetyPolicy, validateRuntimeSafetyPolicy, type RuntimeSafetyClassification, type RuntimeSafetyPolicy, type RuntimeSafetyValidation } from "./runtime-safety";
 export {
   RUNTIME_CONCURRENCY_SCOPES, RUNTIME_CONFLICT_CLASSIFICATIONS, RUNTIME_FRESHNESS_CLASSIFICATIONS,

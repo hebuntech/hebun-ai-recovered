@@ -1,0 +1,4 @@
+import assert from "node:assert/strict";
+import { createRuntimeOutcomeProjection, validateRuntimeOutcomeProjection } from "../../src/features/director-command";
+const projection = createRuntimeOutcomeProjection({ executionId: "execution-4c6", logicalId: "logical-4c6", targetId: "target-4c6", safetyClassification: "elevated", readiness: "authority_required", timestamp: "2026-07-23T12:00:00.000Z", outcome: "blocked", classification: "indeterminate", projectionTargets: ["audit", "timeline"], executable: false, authoritative: false });
+assert.equal(Object.isFrozen(projection), true); assert.equal(validateRuntimeOutcomeProjection(projection).status, "valid"); assert.throws(() => { (projection as unknown as { outcome: string }).outcome = "completed"; }); console.log("runtime outcome checks passed");
