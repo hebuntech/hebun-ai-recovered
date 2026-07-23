@@ -55,6 +55,7 @@ function exposesNoExecution(): void {
     "RUNTIME_EXECUTION_OUTCOMES", "RUNTIME_OUTCOME_ERROR_CODES", "RUNTIME_PROJECTION_TARGETS", "RUNTIME_RESULT_CLASSIFICATIONS",
     "RUNTIME_COMPENSATION_STRATEGIES", "RUNTIME_FAILURE_CLASSIFICATIONS", "RUNTIME_RECOVERY_ELIGIBILITY", "RUNTIME_RECOVERY_ERROR_CODES", "RUNTIME_RECOVERY_READINESS", "RUNTIME_RECOVERY_STRATEGIES", "RUNTIME_TERMINALITY",
   "RUNTIME_EXECUTION_INTEGRATION_VERSION", "RUNTIME_INTEGRATION_ERROR_CODES", "RUNTIME_INTEGRATION_GATES", "RUNTIME_INTEGRATION_STAGES",
+    "RUNTIME_AUTHORITY_ERROR_CODES", "RUNTIME_AUTHORITY_REASON_CODES", "RUNTIME_AUTHORITY_STATUSES", "RUNTIME_AUTHORITY_VERSION",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -161,6 +162,17 @@ function runtimeIntegrationHasNoReverseDependencies(): void {
   }
 }
 
+/** Phase 4D.1 may consume Runtime contracts, but no prior Runtime contract may consume it. */
+function runtimeAuthorityHasNoReverseDependencies(): void {
+  const authority = sources.find(({ name }) => name === "runtime-authority.ts");
+  assert.notEqual(authority, undefined);
+  for (const { name, text } of sources) {
+    if (name !== "runtime-authority.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-authority"'), false, `${name} must not depend on Phase 4D.1`);
+    }
+  }
+}
+
 function grep(root: string, needle: string): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
@@ -184,6 +196,7 @@ function main(): void {
   dashboardContractsUnchanged();
   integrationConsumesReadModelsOnly();
   runtimeIntegrationHasNoReverseDependencies();
+  runtimeAuthorityHasNoReverseDependencies();
   console.log("director command boundary checks passed");
 }
 
