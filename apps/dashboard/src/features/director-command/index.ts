@@ -1,5 +1,14 @@
 export { UNRESOLVED_COMMAND_AUTHORITY } from "./authority";
 export {
+  RUNTIME_CONCURRENCY_SCOPES, RUNTIME_CONFLICT_CLASSIFICATIONS, RUNTIME_FRESHNESS_CLASSIFICATIONS,
+  RUNTIME_IDEMPOTENCY_ERROR_CODES, RUNTIME_REPLAY_CLASSIFICATIONS,
+  createRuntimeExecutionIdentity, createRuntimeIdempotencyIdentity, validateRuntimeExecutionReadiness,
+  type RuntimeConcurrencyScope, type RuntimeConflictClassification, type RuntimeExecutionIdentity,
+  type RuntimeExecutionLease, type RuntimeExecutionReadiness, type RuntimeFreshnessClassification,
+  type RuntimeIdempotencyError, type RuntimeIdempotencyErrorCode, type RuntimeIdempotencyIdentity,
+  type RuntimeReplayClassification,
+} from "./runtime-idempotency";
+export {
   RUNTIME_ADAPTER_AVAILABILITY_STATES,
   RUNTIME_ADAPTER_DESCRIPTORS,
   RUNTIME_ADAPTER_ERROR_CODES,

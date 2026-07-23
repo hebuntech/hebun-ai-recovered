@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import { createRuntimeExecutionIdentity, createRuntimeIdempotencyIdentity, validateRuntimeExecutionReadiness } from "../../src/features/director-command";
+const target = Object.freeze({ targetFamily: "monitoring" as const, canonicalTargetId: "target-4c4", sectionId: "monitoring-summary", commandFamily: "observability" as const, requiredCapability: "observability.reevaluate" as const, resolutionVersion: "1.0.0" as const, resolutionSource: "registry" as const, executable: false as const, authoritative: false as const });
+const identity = createRuntimeExecutionIdentity({ executionId: "execution-4c4", correlationId: "correlation-4c4", commandId: "monitoring.refresh", commandVersion: "1.0.0", target, creationTimestamp: "2026-07-29T13:00:00.000Z" });
+const idempotency = createRuntimeIdempotencyIdentity(identity);
+const readiness = Object.freeze({ replay: "unique" as const, freshness: "fresh" as const, conflict: "none" as const, lease: Object.freeze({ required: true as const, scope: "target" as const, state: "unacquired" as const, executable: false as const, authoritative: false as const }), executable: false as const, authoritative: false as const });
+assert.equal(Object.isFrozen(identity), true); assert.equal(Object.isFrozen(idempotency), true);
+assert.equal(validateRuntimeExecutionReadiness({ identity, idempotency, readiness }).status, "blocked");
+assert.equal(validateRuntimeExecutionReadiness({ identity, idempotency, readiness: Object.freeze({ ...readiness, replay: "duplicate" as const }) }).status, "invalid");
+assert.throws(() => { (identity as unknown as { executionId: string }).executionId = "changed"; });
+console.log("runtime idempotency checks passed");
