@@ -54,6 +54,7 @@ function exposesNoExecution(): void {
     "RUNTIME_CANCELLATION_POLICIES", "RUNTIME_EXECUTION_READINESS_STATES", "RUNTIME_ROLLBACK_CLASSIFICATIONS", "RUNTIME_SAFETY_CLASSIFICATIONS", "RUNTIME_SAFETY_ERROR_CODES", "RUNTIME_TIMEOUT_CLASSES",
     "RUNTIME_EXECUTION_OUTCOMES", "RUNTIME_OUTCOME_ERROR_CODES", "RUNTIME_PROJECTION_TARGETS", "RUNTIME_RESULT_CLASSIFICATIONS",
     "RUNTIME_COMPENSATION_STRATEGIES", "RUNTIME_FAILURE_CLASSIFICATIONS", "RUNTIME_RECOVERY_ELIGIBILITY", "RUNTIME_RECOVERY_ERROR_CODES", "RUNTIME_RECOVERY_READINESS", "RUNTIME_RECOVERY_STRATEGIES", "RUNTIME_TERMINALITY",
+  "RUNTIME_EXECUTION_INTEGRATION_VERSION", "RUNTIME_INTEGRATION_ERROR_CODES", "RUNTIME_INTEGRATION_GATES", "RUNTIME_INTEGRATION_STAGES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -149,6 +150,17 @@ function integrationConsumesReadModelsOnly(): void {
   }
 }
 
+/** Phase 4C.8 is terminal in this declarative chain; earlier layers cannot depend on it. */
+function runtimeIntegrationHasNoReverseDependencies(): void {
+  const integration = sources.find(({ name }) => name === "runtime-execution-integration.ts");
+  assert.notEqual(integration, undefined);
+  for (const { name, text } of sources) {
+    if (name !== "runtime-execution-integration.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes("runtime-execution-integration"), false, `${name} must not depend on Phase 4C.8`);
+    }
+  }
+}
+
 function grep(root: string, needle: string): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
@@ -171,6 +183,7 @@ function main(): void {
   legacyCommandPipelineUntouched();
   dashboardContractsUnchanged();
   integrationConsumesReadModelsOnly();
+  runtimeIntegrationHasNoReverseDependencies();
   console.log("director command boundary checks passed");
 }
 
