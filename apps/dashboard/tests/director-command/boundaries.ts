@@ -67,6 +67,7 @@ function exposesNoExecution(): void {
     "RUNTIME_EXECUTION_PIPELINE_VERSION", "RUNTIME_EXECUTION_PIPELINE_STAGES", "RUNTIME_EXECUTION_PIPELINE_ERROR_CODES",
     "RUNTIME_DISPATCH_VERSION", "RUNTIME_DISPATCH_TARGET_CATEGORIES", "RUNTIME_DISPATCH_ERROR_CODES",
     "RUNTIME_ADAPTER_INVOCATION_CONTRACT_VERSION", "RUNTIME_ADAPTER_INVOCATION_TARGET_CATEGORIES", "RUNTIME_ADAPTER_INVOCATION_ERROR_CODES",
+    "RUNTIME_EXECUTION_RESULT_VERSION", "RUNTIME_EXECUTION_STATUSES", "RUNTIME_EXECUTION_OUTPUT_TYPES", "RUNTIME_EXECUTION_RESULT_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -341,8 +342,32 @@ function runtimeAdapterInvocationContractIsExecutionFree(): void {
     assert.equal(contract!.text.toLowerCase().includes(forbidden), false, `Runtime Adapter Invocation Contract must not depend on ${forbidden}`);
   }
   for (const { name, text } of sources) {
-    if (name !== "runtime-adapter-invocation-contract.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-adapter-invocation-contract.ts" && name !== "runtime-execution-result.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-adapter-invocation-contract"'), false, `${name} must not depend on Phase 4E.5`);
+    }
+  }
+}
+
+/** Phase 4E.6 consumes Invocation metadata; earlier Runtime layers cannot depend on result metadata. */
+function runtimeExecutionResultIsExecutionFree(): void {
+  const result = sources.find(({ name }) => name === "runtime-execution-result.ts");
+  assert.notEqual(result, undefined);
+  const imports = [...result!.text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(imports, ["./runtime-adapter-invocation-contract", "./validation"]);
+  for (const forbidden of [
+    "runtime-engine", "runtime-execution-session", "runtime-execution-permit",
+    "runtime-execution-context", "runtime-execution-contracts", "runtime-adapter-framework",
+    "runtime-adapter-registry", "runtime-adapter-selection", "runtime-execution-gateway",
+    "runtime-execution-integration", "provider-invocation", "retry", "recover",
+    "fetch(", "xmlhttprequest", "websocket", "node:fs", "node:child_process",
+    "drizzle", "postgres", "redis", "settimeout", "setinterval", "queue", "scheduler",
+    "react", "dashboard",
+  ]) {
+    assert.equal(result!.text.toLowerCase().includes(forbidden), false, `Runtime Execution Result must not depend on ${forbidden}`);
+  }
+  for (const { name, text } of sources) {
+    if (name !== "runtime-execution-result.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-execution-result"'), false, `${name} must not depend on Phase 4E.6`);
     }
   }
 }
@@ -393,6 +418,7 @@ function main(): void {
   runtimeExecutionPipelineIsExecutionFree();
   runtimeCommandDispatcherIsExecutionFree();
   runtimeAdapterInvocationContractIsExecutionFree();
+  runtimeExecutionResultIsExecutionFree();
   console.log("director command boundary checks passed");
 }
 
