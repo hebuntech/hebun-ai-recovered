@@ -68,6 +68,7 @@ function exposesNoExecution(): void {
     "RUNTIME_DISPATCH_VERSION", "RUNTIME_DISPATCH_TARGET_CATEGORIES", "RUNTIME_DISPATCH_ERROR_CODES",
     "RUNTIME_ADAPTER_INVOCATION_CONTRACT_VERSION", "RUNTIME_ADAPTER_INVOCATION_TARGET_CATEGORIES", "RUNTIME_ADAPTER_INVOCATION_ERROR_CODES",
     "RUNTIME_EXECUTION_RESULT_VERSION", "RUNTIME_EXECUTION_STATUSES", "RUNTIME_EXECUTION_OUTPUT_TYPES", "RUNTIME_EXECUTION_RESULT_ERROR_CODES",
+    "RUNTIME_RETRY_COMPENSATION_VERSION", "RUNTIME_RETRY_ELIGIBILITY_REASONS", "RUNTIME_RETRY_BACKOFF_STRATEGIES", "RUNTIME_COMPENSATION_STEP_KINDS", "RUNTIME_COMPENSATION_STATUSES", "RUNTIME_RECOVERY_CLASSES", "RUNTIME_RETRY_COMPENSATION_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -366,8 +367,37 @@ function runtimeExecutionResultIsExecutionFree(): void {
     assert.equal(result!.text.toLowerCase().includes(forbidden), false, `Runtime Execution Result must not depend on ${forbidden}`);
   }
   for (const { name, text } of sources) {
-    if (name !== "runtime-execution-result.ts" && name.startsWith("runtime-")) {
+    // Phase 4E.7 (retry & compensation) is the sanctioned downstream consumer
+    // of the result, per the canonical flow Result -> RetryPolicy -> Plan.
+    if (name !== "runtime-execution-result.ts" && name !== "runtime-retry-compensation.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-execution-result"'), false, `${name} must not depend on Phase 4E.6`);
+    }
+  }
+}
+
+/** Phase 4E.7 consumes the execution result; nothing may depend back on retry metadata. */
+function runtimeRetryCompensationIsExecutionFree(): void {
+  const retry = sources.find(({ name }) => name === "runtime-retry-compensation.ts");
+  assert.notEqual(retry, undefined);
+  const imports = [...retry!.text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(imports, ["./runtime-execution-result", "./validation"]);
+  for (const forbidden of [
+    "runtime-engine", "runtime-execution-session", "runtime-execution-permit",
+    "runtime-execution-context", "runtime-execution-contracts", "runtime-adapter-framework",
+    "runtime-adapter-registry", "runtime-adapter-selection", "runtime-execution-gateway",
+    "runtime-execution-integration", "runtime-command-dispatcher", "provider-invocation",
+    "fetch(", "xmlhttprequest", "websocket", "node:fs", "node:child_process",
+    "drizzle", "postgres", "redis", "settimeout", "setinterval", "setimmediate",
+    "queuemicrotask", "queue", "scheduler", " timer", "react", "dashboard",
+    "new promise", "await ",
+  ]) {
+    assert.equal(retry!.text.toLowerCase().includes(forbidden), false, `Runtime Retry & Compensation must not depend on ${forbidden}`);
+  }
+  // The retry & compensation layer is terminal: no earlier Runtime layer may
+  // depend on it; only a future executor consumes it.
+  for (const { name, text } of sources) {
+    if (name !== "runtime-retry-compensation.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-retry-compensation"'), false, `${name} must not depend on Phase 4E.7`);
     }
   }
 }
@@ -419,6 +449,7 @@ function main(): void {
   runtimeCommandDispatcherIsExecutionFree();
   runtimeAdapterInvocationContractIsExecutionFree();
   runtimeExecutionResultIsExecutionFree();
+  runtimeRetryCompensationIsExecutionFree();
   console.log("director command boundary checks passed");
 }
 
