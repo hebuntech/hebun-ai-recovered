@@ -65,6 +65,7 @@ function exposesNoExecution(): void {
     "RUNTIME_ENGINE_VERSION", "RUNTIME_ENGINE_STATES", "RUNTIME_ENGINE_COORDINATION_MODES", "RUNTIME_ENGINE_ERROR_CODES",
     "RUNTIME_EXECUTION_SESSION_VERSION", "RUNTIME_EXECUTION_SESSION_ERROR_CODES",
     "RUNTIME_EXECUTION_PIPELINE_VERSION", "RUNTIME_EXECUTION_PIPELINE_STAGES", "RUNTIME_EXECUTION_PIPELINE_ERROR_CODES",
+    "RUNTIME_DISPATCH_VERSION", "RUNTIME_DISPATCH_TARGET_CATEGORIES", "RUNTIME_DISPATCH_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -294,8 +295,30 @@ function runtimeExecutionPipelineIsExecutionFree(): void {
     assert.equal(pipeline!.text.toLowerCase().includes(forbidden), false, `Runtime Execution Pipeline must not depend on ${forbidden}`);
   }
   for (const { name, text } of sources) {
-    if (name !== "runtime-execution-pipeline.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-execution-pipeline.ts" && name !== "runtime-command-dispatcher.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-execution-pipeline"'), false, `${name} must not depend on Phase 4E.3`);
+    }
+  }
+}
+
+/** Phase 4E.4 consumes Pipeline metadata; no earlier Runtime layer may depend on Dispatcher. */
+function runtimeCommandDispatcherIsExecutionFree(): void {
+  const dispatcher = sources.find(({ name }) => name === "runtime-command-dispatcher.ts");
+  assert.notEqual(dispatcher, undefined);
+  const imports = [...dispatcher!.text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(imports, ["./runtime-execution-pipeline", "./validation"]);
+  for (const forbidden of [
+    "runtime-engine", "runtime-execution-session", "runtime-execution-permit",
+    "runtime-execution-context", "runtime-execution-contracts", "runtime-adapter",
+    "runtime-execution-gateway", "runtime-execution-integration", "provider",
+    "fetch(", "node:fs", "node:child_process", "drizzle", "postgres", "redis",
+    "settimeout", "setinterval", "queue", "scheduler", "react", "dashboard",
+  ]) {
+    assert.equal(dispatcher!.text.toLowerCase().includes(forbidden), false, `Runtime Command Dispatcher must not depend on ${forbidden}`);
+  }
+  for (const { name, text } of sources) {
+    if (name !== "runtime-command-dispatcher.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-command-dispatcher"'), false, `${name} must not depend on Phase 4E.4`);
     }
   }
 }
@@ -344,6 +367,7 @@ function main(): void {
   runtimeEngineIsExecutionFree();
   runtimeExecutionSessionIsExecutionFree();
   runtimeExecutionPipelineIsExecutionFree();
+  runtimeCommandDispatcherIsExecutionFree();
   console.log("director command boundary checks passed");
 }
 
