@@ -64,6 +64,7 @@ function exposesNoExecution(): void {
     "RUNTIME_EXECUTION_PERMIT_LIFECYCLE_VERSION", "RUNTIME_PERMIT_LIFECYCLE_STATES", "RUNTIME_PERMIT_LIFECYCLE_ERROR_CODES",
     "RUNTIME_ENGINE_VERSION", "RUNTIME_ENGINE_STATES", "RUNTIME_ENGINE_COORDINATION_MODES", "RUNTIME_ENGINE_ERROR_CODES",
     "RUNTIME_EXECUTION_SESSION_VERSION", "RUNTIME_EXECUTION_SESSION_ERROR_CODES",
+    "RUNTIME_EXECUTION_PIPELINE_VERSION", "RUNTIME_EXECUTION_PIPELINE_STAGES", "RUNTIME_EXECUTION_PIPELINE_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -268,13 +269,35 @@ function runtimeExecutionSessionIsExecutionFree(): void {
     assert.equal(session!.text.toLowerCase().includes(forbidden), false, `Runtime Execution Session must not depend on ${forbidden}`);
   }
   for (const { name, text } of sources) {
-    if (name !== "runtime-execution-session.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-execution-session.ts" && name !== "runtime-execution-pipeline.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-execution-session"'), false, `${name} must not depend on Phase 4E.2`);
     }
   }
   const barrel = sources.find(({ name }) => name === "index.ts")!.text;
   assert.equal(barrel.includes("type RuntimeExecutionContext,"), true, "Phase 4C RuntimeExecutionContext export must remain canonical");
   assert.equal(barrel.includes("type RuntimeExecutionSession,"), true, "Phase 4E.2 RuntimeExecutionSession export must coexist");
+}
+
+/** Phase 4E.3 consumes Session metadata; no earlier Runtime layer may depend on Pipeline. */
+function runtimeExecutionPipelineIsExecutionFree(): void {
+  const pipeline = sources.find(({ name }) => name === "runtime-execution-pipeline.ts");
+  assert.notEqual(pipeline, undefined);
+  const imports = [...pipeline!.text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(imports, ["./runtime-execution-session", "./validation"]);
+  for (const forbidden of [
+    "runtime-engine", "runtime-execution-permit", "runtime-execution-context",
+    "runtime-execution-contracts", "runtime-adapter", "runtime-execution-gateway",
+    "runtime-execution-integration", "provider", "fetch(", "node:fs", "node:child_process",
+    "drizzle", "postgres", "redis", "settimeout", "setinterval", "queue", "scheduler",
+    "react", "dashboard",
+  ]) {
+    assert.equal(pipeline!.text.toLowerCase().includes(forbidden), false, `Runtime Execution Pipeline must not depend on ${forbidden}`);
+  }
+  for (const { name, text } of sources) {
+    if (name !== "runtime-execution-pipeline.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-execution-pipeline"'), false, `${name} must not depend on Phase 4E.3`);
+    }
+  }
 }
 
 /** Phase 4D.7 lifecycle metadata is terminal; earlier layers may not consume it. */
@@ -320,6 +343,7 @@ function main(): void {
   runtimeExecutionPermitLifecycleHasNoReverseDependencies();
   runtimeEngineIsExecutionFree();
   runtimeExecutionSessionIsExecutionFree();
+  runtimeExecutionPipelineIsExecutionFree();
   console.log("director command boundary checks passed");
 }
 
