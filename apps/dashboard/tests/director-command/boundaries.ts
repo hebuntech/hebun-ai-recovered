@@ -66,6 +66,7 @@ function exposesNoExecution(): void {
     "RUNTIME_EXECUTION_SESSION_VERSION", "RUNTIME_EXECUTION_SESSION_ERROR_CODES",
     "RUNTIME_EXECUTION_PIPELINE_VERSION", "RUNTIME_EXECUTION_PIPELINE_STAGES", "RUNTIME_EXECUTION_PIPELINE_ERROR_CODES",
     "RUNTIME_DISPATCH_VERSION", "RUNTIME_DISPATCH_TARGET_CATEGORIES", "RUNTIME_DISPATCH_ERROR_CODES",
+    "RUNTIME_ADAPTER_INVOCATION_CONTRACT_VERSION", "RUNTIME_ADAPTER_INVOCATION_TARGET_CATEGORIES", "RUNTIME_ADAPTER_INVOCATION_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -317,8 +318,31 @@ function runtimeCommandDispatcherIsExecutionFree(): void {
     assert.equal(dispatcher!.text.toLowerCase().includes(forbidden), false, `Runtime Command Dispatcher must not depend on ${forbidden}`);
   }
   for (const { name, text } of sources) {
-    if (name !== "runtime-command-dispatcher.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-command-dispatcher.ts" && name !== "runtime-adapter-invocation-contract.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-command-dispatcher"'), false, `${name} must not depend on Phase 4E.4`);
+    }
+  }
+}
+
+/** Phase 4E.5 consumes Dispatcher metadata; no earlier Runtime layer may depend on the invocation contract. */
+function runtimeAdapterInvocationContractIsExecutionFree(): void {
+  const contract = sources.find(({ name }) => name === "runtime-adapter-invocation-contract.ts");
+  assert.notEqual(contract, undefined);
+  const imports = [...contract!.text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(imports, ["./runtime-command-dispatcher", "./validation"]);
+  for (const forbidden of [
+    "runtime-engine", "runtime-execution-session", "runtime-execution-permit",
+    "runtime-execution-context", "runtime-execution-contracts", "runtime-adapter-framework",
+    "runtime-adapter-registry", "runtime-adapter-selection", "runtime-execution-gateway",
+    "runtime-execution-integration", "provider-invocation", "fetch(", "xmlhttprequest",
+    "websocket", "node:fs", "node:child_process", "drizzle", "postgres", "redis",
+    "settimeout", "setinterval", "queue", "scheduler", "react", "dashboard",
+  ]) {
+    assert.equal(contract!.text.toLowerCase().includes(forbidden), false, `Runtime Adapter Invocation Contract must not depend on ${forbidden}`);
+  }
+  for (const { name, text } of sources) {
+    if (name !== "runtime-adapter-invocation-contract.ts" && name.startsWith("runtime-")) {
+      assert.equal(text.includes('from "./runtime-adapter-invocation-contract"'), false, `${name} must not depend on Phase 4E.5`);
     }
   }
 }
@@ -368,6 +392,7 @@ function main(): void {
   runtimeExecutionSessionIsExecutionFree();
   runtimeExecutionPipelineIsExecutionFree();
   runtimeCommandDispatcherIsExecutionFree();
+  runtimeAdapterInvocationContractIsExecutionFree();
   console.log("director command boundary checks passed");
 }
 
