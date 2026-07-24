@@ -62,6 +62,7 @@ function exposesNoExecution(): void {
     "RUNTIME_HUMAN_APPROVAL_VERSION", "RUNTIME_APPROVAL_STATUSES", "RUNTIME_APPROVAL_DECISIONS", "RUNTIME_HUMAN_APPROVAL_ERROR_CODES",
     "RUNTIME_EXECUTION_PERMIT_VERSION", "RUNTIME_PERMIT_STATUSES", "RUNTIME_PERMIT_ERROR_CODES",
     "RUNTIME_EXECUTION_PERMIT_LIFECYCLE_VERSION", "RUNTIME_PERMIT_LIFECYCLE_STATES", "RUNTIME_PERMIT_LIFECYCLE_ERROR_CODES",
+    "RUNTIME_ENGINE_VERSION", "RUNTIME_ENGINE_STATES", "RUNTIME_ENGINE_COORDINATION_MODES", "RUNTIME_ENGINE_ERROR_CODES",
   ]);
   // No other exported symbol suggests or performs execution.
   for (const exported of Object.keys(directorCommand)) {
@@ -228,9 +229,25 @@ function runtimeExecutionPermitHasNoReverseDependencies(): void {
   const permit = sources.find(({ name }) => name === "runtime-execution-permit.ts");
   assert.notEqual(permit, undefined);
   for (const { name, text } of sources) {
-    if (name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name.startsWith("runtime-")) {
+    if (name !== "runtime-execution-permit.ts" && name !== "runtime-execution-permit-lifecycle.ts" && name !== "runtime-engine.ts" && name.startsWith("runtime-")) {
       assert.equal(text.includes('from "./runtime-execution-permit"'), false, `${name} must not depend on Phase 4D.6`);
     }
+  }
+}
+
+/** Phase 4E.1 consumes only the permit contract and inert validation helpers. */
+function runtimeEngineIsExecutionFree(): void {
+  const engine = sources.find(({ name }) => name === "runtime-engine.ts");
+  assert.notEqual(engine, undefined);
+  const imports = [...engine!.text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(imports, ["./runtime-execution-permit", "./validation"]);
+  for (const forbidden of [
+    "runtime-execution-permit-lifecycle", "runtime-authority", "runtime-policy",
+    "runtime-risk-classification", "runtime-human-approval", "runtime-adapter",
+    "runtime-execution-gateway", "runtime-execution-integration", "provider",
+    "fetch(", "node:fs", "node:child_process", "drizzle", "postgres", "redis",
+  ]) {
+    assert.equal(engine!.text.toLowerCase().includes(forbidden.toLowerCase()), false, `Runtime Engine must not depend on ${forbidden}`);
   }
 }
 
@@ -275,6 +292,7 @@ function main(): void {
   runtimeHumanApprovalHasNoReverseDependencies();
   runtimeExecutionPermitHasNoReverseDependencies();
   runtimeExecutionPermitLifecycleHasNoReverseDependencies();
+  runtimeEngineIsExecutionFree();
   console.log("director command boundary checks passed");
 }
 
